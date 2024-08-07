@@ -190,8 +190,10 @@ void aero_rep_single_particle_get_effective_radius__m(
 /** \brief Get the surface area of specified particle layer \f$r_{eff}\f$ (m)
  *
  * \param model_data Pointer to the model data, including the state array
+ * \param aero_layer_idx Index of aerosol layer (0 is innermost layer)
  * \param aero_phase_idx Index of the aerosol phase within the representation
- * \param radius Effective particle radius (m)
+ * \param outer_radius Radius of outer layer (m)
+ * \param inner_radius Radius of inner layer(m)
  * \param partial_deriv \f$\frac{\partial r_{eff}}{\partial y}\f$ where \f$y\f$
  *                      are species on the state array
  * \param aero_rep_int_data Pointer to the aerosol representation integer data
@@ -199,6 +201,7 @@ void aero_rep_single_particle_get_effective_radius__m(
  *                            floating-point data
  * \param aero_rep_env_data Pointer to the aerosol representation
  *                          environment-dependent parameters
+ * \param surf_area_layer Surface area of specified layer (m2)
  */
 
 void aero_rep_single_particle_get_surface_area_layer__m2(
