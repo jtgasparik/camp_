@@ -28,6 +28,9 @@
 // index for the test phase (test-particle phase 2)
 #define AERO_PHASE_IDX ((TEST_PARTICLE-1)*NUM_AERO_PHASE+1)
 
+// index for test layer (surface layer)
+#define AERO_LAYER_IDX 3
+
 // number of Jacobian elements used for the test phase
 #define N_JAC_ELEM 12
 
@@ -139,6 +142,48 @@ int test_effective_radius(ModelData * model_data, N_Vector state) {
   return ret_val;
 }
 
+/** \brief Test the surface area of a specified layer function
+ *
+ * \param model_data Pointer to the model data
+ * \param state Solver state
+ */
+
+int test_surface_area_layer(ModelData * model_data, N_Vector state) {
+
+  int ret_val = 0;
+  double partial_deriv[N_JAC_ELEM+2];
+  double eff_sa = -999.9;
+ 
+  for( int i = 0; i < N_JAC_ELEM+2; ++i ) partial_deriv[i] = 999.9;
+
+  aero_rep_get_surface_area_layer__m2(model_data, AERO_REP_IDX,
+                                AERO_LAYER_IDX, AERO_PHASE_IDX, &eff_sa, 
+                                &(partial_deriv[1]));
+
+  double volume_density = ( CONC_wheat / DENSITY_wheat +
+                            CONC_water / DENSITY_water +
+                            CONC_salt / DENSITY_salt +
+                            CONC_rasberry / DENSITY_rasberry +
+                            CONC_honey / DENSITY_honey +
+                            CONC_sugar / DENSITY_sugar +
+                            CONC_lemon / DENSITY_lemon +
+                            CONC_almonds / DENSITY_almonds +
+                            CONC_sugarB / DENSITY_sugar +
+                            CONC_wheatB / DENSITY_wheat +
+                            CONC_waterB / DENSITY_water +
+                            CONC_saltB / DENSITY_salt ); // volume density (m3/m3)
+
+  double eff_rad_expected = pow( ( 3.0 / 4.0 / 3.14159265359 * volume_density ), 1.0/3.0 );
+
+  double eff_sa_expected = (4.0 * 3.14159265359 * pow( eff_rad_expected, 2.0 ) * ( 1.0/3.0 ) );
+  ret_val += ASSERT_MSG(fabs(eff_sa-eff_sa_expected) < 1.0e-4*eff_sa_expected,
+                        "Bad surface area layer");
+
+  printf("\nSurface area expected: %d", eff_sa_expected);
+  printf("\nSurface area %d", eff_sa);
+  printf("\nDifference %d", (eff_sa-eff_sa_expected));
+  return ret_val;
+}
 /** \brief Test the number concentration function
  *
  * \param model_data Pointer to the model data
@@ -329,6 +374,7 @@ int run_aero_rep_single_particle_c_tests(void *solver_data, double *state, doubl
 
   // Run the property tests
   ret_val += test_effective_radius(model_data, solver_state);
+  ret_val += test_surface_area_layer(model_data, solver_state);
   ret_val += test_aero_phase_mass(model_data, solver_state);
   ret_val += test_aero_phase_avg_MW(model_data, solver_state);
   ret_val += test_number_concentration(model_data, solver_state);

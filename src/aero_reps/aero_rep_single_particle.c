@@ -237,9 +237,7 @@ void aero_rep_single_particle_get_surface_area_layer__m2(
   for (int i_layer = aero_layer_idx - 1; i_layer < aero_layer_idx; ++i_layer) {
     for (int i_phase = 0; i_phase < NUM_PHASES_(i_layer); ++i_phase) {
       for (int i_spec = 0; i_spec < PHASE_NUM_JAC_ELEM_(i_layer,i_phase); ++i_spec) {
-        *partial_deriv =
-            1.0 / 4.0 / 3.14159265359 * pow(*outer_radius, -2.0) * (*partial_deriv);
-        ++partial_deriv;
+        *(partial_deriv++) = ZERO;
       }
     }
   }
