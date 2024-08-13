@@ -107,6 +107,7 @@ int test_effective_radius(ModelData * model_data, N_Vector state) {
   ret_val += ASSERT_MSG(fabs(eff_rad-eff_rad_expected) < 1.0e-6*eff_rad_expected,
                         "Bad effective radius");
 
+  printf("\nRadius %p", &eff_rad_expected); 
   ret_val += ASSERT_MSG(partial_deriv[0] = 999.9,
                         "Bad Jacobian (-1)");
   double d_eff_rad_dx = 1.0 / 4.0 / 3.14159265359 *
