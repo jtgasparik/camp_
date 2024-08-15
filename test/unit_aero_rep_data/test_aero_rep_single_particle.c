@@ -176,7 +176,7 @@ int test_surface_area_layer(ModelData * model_data, N_Vector state) {
 
   double eff_rad_expected = pow( ( 3.0 / 4.0 / 3.14159265359 * volume_density ), 1.0/3.0 );
 
-  double eff_sa_expected = (4.0 * 3.14159265359 * pow( eff_rad_expected, 2.0 ) * ( 1.0/3.0 ) );
+  double eff_sa_expected = 4.0 * 3.14159265359 * pow( eff_rad_expected, 2.0 );
   ret_val += ASSERT_MSG(fabs(eff_sa-eff_sa_expected) < 1.0e-4*eff_sa_expected,
                         "Bad surface area layer");
 

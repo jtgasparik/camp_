@@ -206,6 +206,65 @@ void aero_rep_single_particle_get_effective_radius__m(
 
 void aero_rep_single_particle_get_surface_area_layer__m2(
     ModelData *model_data, int aero_layer_idx, int aero_phase_idx, 
+    double *radius, double *surface_area_layer, double *partial_deriv, 
+    int *aero_rep_int_data, double *aero_rep_float_data, double *aero_rep_env_data) {
+
+  int *int_data = aero_rep_int_data;
+  double *float_data = aero_rep_float_data;
+  int i_part = aero_phase_idx / TOTAL_NUM_PHASES_;
+  double *curr_partial = NULL;
+
+  *radius = 0.0;
+  if (partial_deriv) curr_partial = partial_deriv;
+  for (int i_layer = 0; i_layer < aero_layer_idx; ++i_layer) {
+    for (int i_phase = 0; i_phase < NUM_PHASES_(i_layer); ++i_phase) {
+      double *state = (double *)(model_data->grid_cell_state);
+      state += i_part * PARTICLE_STATE_SIZE_ + PHASE_STATE_ID_(i_layer,i_phase);
+      double volume;
+      aero_phase_get_volume__m3_m3(model_data, PHASE_MODEL_DATA_ID_(i_layer,i_phase),
+                                   state, &(volume), curr_partial);
+      if (partial_deriv) curr_partial += PHASE_NUM_JAC_ELEM_(i_layer,i_phase);
+      *radius += volume;
+    }
+  }
+  double volume_der = *radius;
+  *radius = pow(((*radius) * 3.0 / 4.0 / 3.14159265359), 1.0 / 3.0);
+  *surface_area_layer = 4 * 3.14159265359 * pow(*radius, 2.0);
+  if (!partial_deriv) return;
+  for (int i_layer = 0; i_layer < aero_layer_idx; ++i_layer) {
+    for (int i_phase = 0; i_phase < NUM_PHASES_(i_layer); ++i_phase) {
+      for (int i_spec = 0; i_spec < PHASE_NUM_JAC_ELEM_(i_layer,i_phase); ++i_spec) {
+        if (i_layer < aero_layer_idx) {
+          *partial_deriv =
+              2.0 * pow((volume_der) * 3.0 / 4.0 / 3.14159265359, -1.0 / 3.0)  * (*partial_deriv);
+          ++partial_deriv;
+        }
+        if (i_layer == aero_layer_idx) *(partial_deriv++) = ZERO;
+      }
+    }
+  }
+  return;
+}
+
+/** \brief Get the surface area of specified particle layer \f$r_{eff}\f$ (m)
+ *
+ * \param model_data Pointer to the model data, including the state array
+ * \param aero_layer_idx Index of aerosol layer (0 is innermost layer)
+ * \param aero_phase_idx Index of the aerosol phase within the representation
+ * \param outer_radius Radius of outer layer (m)
+ * \param inner_radius Radius of inner layer(m)
+ * \param partial_deriv \f$\frac{\partial r_{eff}}{\partial y}\f$ where \f$y\f$
+ *                      are species on the state array
+ * \param aero_rep_int_data Pointer to the aerosol representation integer data
+ * \param aero_rep_float_data Pointer to the aerosol representation
+ *                            floating-point data
+ * \param aero_rep_env_data Pointer to the aerosol representation
+ *                          environment-dependent parameters
+ * \param surf_area_layer Surface area of specified layer (m2)
+ 
+
+void aero_rep_single_particle_get_surface_area_layer__m2(
+    ModelData *model_data, int aero_layer_idx, int aero_phase_idx, 
     double *outer_radius, double *inner_radius,
     double *partial_deriv, int *aero_rep_int_data, double *aero_rep_float_data,
     double *aero_rep_env_data, double *surf_area_layer) {
@@ -243,6 +302,7 @@ void aero_rep_single_particle_get_surface_area_layer__m2(
   }
   return;
 }
+*/
 
 /** \brief Get the particle number concentration \f$n\f$
  * (\f$\mbox{\si{\#\per\cubic\metre}}\f$)
@@ -355,6 +415,7 @@ void aero_rep_single_particle_get_aero_phase_mass__kg_m3(
         double mw;
         aero_phase_get_mass__kg_m3(model_data, aero_phase_idx, state,
                                      aero_phase_mass, &mw, partial_deriv, NULL);
+        printf("\nmolecular weight: %f", mw);
         if (partial_deriv) partial_deriv += PHASE_NUM_JAC_ELEM_(i_layer,i_phase);
       } else if (partial_deriv) {
         for (int i_spec = 0; i_spec < PHASE_NUM_JAC_ELEM_(i_layer,i_phase); ++i_spec)
