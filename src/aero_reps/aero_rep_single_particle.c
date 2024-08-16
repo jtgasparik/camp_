@@ -464,7 +464,7 @@ void aero_rep_single_particle_get_aero_phase_avg_MW__kg_mol(
         double mass;
         aero_phase_get_mass__kg_m3(model_data, aero_phase_idx, state, &mass,
                                    aero_phase_avg_MW, NULL, partial_deriv);
-        printf("\navg mw: %f", aero_phase_avg_MW);
+        printf("\navg mw: %f", *aero_phase_avg_MW);
         if (partial_deriv) partial_deriv += PHASE_NUM_JAC_ELEM_(i_layer,i_phase);
       } else if (partial_deriv) {
         for (int i_spec = 0; i_spec < PHASE_NUM_JAC_ELEM_(i_layer,i_phase); ++i_spec)
