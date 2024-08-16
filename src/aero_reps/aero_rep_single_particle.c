@@ -415,7 +415,6 @@ void aero_rep_single_particle_get_aero_phase_mass__kg_m3(
         double mw;
         aero_phase_get_mass__kg_m3(model_data, aero_phase_idx, state,
                                      aero_phase_mass, &mw, partial_deriv, NULL);
-        printf("\nmolecular weight: %f", mw);
         if (partial_deriv) partial_deriv += PHASE_NUM_JAC_ELEM_(i_layer,i_phase);
       } else if (partial_deriv) {
         for (int i_spec = 0; i_spec < PHASE_NUM_JAC_ELEM_(i_layer,i_phase); ++i_spec)

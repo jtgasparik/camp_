@@ -345,7 +345,7 @@ void rxn_SIMPOL_phase_transfer_calc_deriv_contrib(
     // Calculate the evaporation rate constant (ppm_x*m^3/kg_x/s)
     long double evap_rate =
         cond_rate * (EQUIL_CONST_ * aero_phase_avg_MW / aero_phase_mass);
-
+    printf("\naero_phase_avg_MW: %f", aero_phase_avg_MW);
     // Get the activity coefficient (if one exists)
     long double act_coeff = 1.0;
     if (AERO_ACT_ID_(i_phase) > -1) {
