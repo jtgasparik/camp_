@@ -148,7 +148,7 @@ int test_effective_radius(ModelData * model_data, N_Vector state) {
  * \param model_data Pointer to the model data
  * \param state Solver state
  */
-/*
+
 int test_surface_area_layer(ModelData * model_data, N_Vector state) {
 
   int ret_val = 0;
@@ -185,7 +185,7 @@ int test_surface_area_layer(ModelData * model_data, N_Vector state) {
   printf("\nDifference %d", (eff_sa-eff_sa_expected));
   return ret_val;
 }
-*/
+
 /** \brief Test the number concentration function
  *
  * \param model_data Pointer to the model data
@@ -376,7 +376,7 @@ int run_aero_rep_single_particle_c_tests(void *solver_data, double *state, doubl
 
   // Run the property tests
   ret_val += test_effective_radius(model_data, solver_state);
-//  ret_val += test_surface_area_layer(model_data, solver_state);
+  ret_val += test_surface_area_layer(model_data, solver_state);
   ret_val += test_aero_phase_mass(model_data, solver_state);
   ret_val += test_aero_phase_avg_MW(model_data, solver_state);
   ret_val += test_number_concentration(model_data, solver_state);

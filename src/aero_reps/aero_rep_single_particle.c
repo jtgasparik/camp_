@@ -231,7 +231,7 @@ void aero_rep_single_particle_get_surface_area_layer__m2(
   *radius = pow(((*radius) * 3.0 / 4.0 / 3.14159265359), 1.0 / 3.0);
   *surface_area_layer = 4 * 3.14159265359 * pow(*radius, 2.0);
   if (!partial_deriv) return;
-  for (int i_layer = 0; i_layer < aero_layer_idx; ++i_layer) {
+  for (int i_layer = 0; i_layer < NUM_LAYERS_; ++i_layer) {
     for (int i_phase = 0; i_phase < NUM_PHASES_(i_layer); ++i_phase) {
       for (int i_spec = 0; i_spec < PHASE_NUM_JAC_ELEM_(i_layer,i_phase); ++i_spec) {
         if (i_layer < aero_layer_idx) {
@@ -239,7 +239,7 @@ void aero_rep_single_particle_get_surface_area_layer__m2(
               2.0 * pow((volume_der) * 3.0 / 4.0 / 3.14159265359, -1.0 / 3.0)  * (*partial_deriv);
           ++partial_deriv;
         }
-        if (i_layer == aero_layer_idx) *(partial_deriv++) = ZERO;
+        else if (i_layer == aero_layer_idx) *(partial_deriv++) = ZERO;
       }
     }
   }
@@ -464,7 +464,6 @@ void aero_rep_single_particle_get_aero_phase_avg_MW__kg_mol(
         double mass;
         aero_phase_get_mass__kg_m3(model_data, aero_phase_idx, state, &mass,
                                    aero_phase_avg_MW, NULL, partial_deriv);
-        printf("\navg mw: %f", *aero_phase_avg_MW);
         if (partial_deriv) partial_deriv += PHASE_NUM_JAC_ELEM_(i_layer,i_phase);
       } else if (partial_deriv) {
         for (int i_spec = 0; i_spec < PHASE_NUM_JAC_ELEM_(i_layer,i_phase); ++i_spec)
