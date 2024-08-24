@@ -104,6 +104,7 @@ int test_effective_radius(ModelData * model_data, N_Vector state) {
                             CONC_saltB / DENSITY_salt ); // volume density (m3/m3)
   
   double eff_rad_expected = pow( ( 3.0 / 4.0 / 3.14159265359 * volume_density ), 1.0/3.0 );
+  printf("\neff radius expected: %d", eff_rad_expected);
   ret_val += ASSERT_MSG(fabs(eff_rad-eff_rad_expected) < 1.0e-6*eff_rad_expected,
                         "Bad effective radius");
 
@@ -180,6 +181,7 @@ int test_surface_area_layer(ModelData * model_data, N_Vector state) {
   ret_val += ASSERT_MSG(fabs(eff_sa-eff_sa_expected) < 1.0e-4*eff_sa_expected,
                         "Bad surface area layer");
 
+  printf("\neff radius expected: %d", eff_rad_expected);
   printf("\nSurface area expected: %d", eff_sa_expected);
   printf("\nSurface area %d", eff_sa);
   printf("\nDifference %d", (eff_sa-eff_sa_expected));
