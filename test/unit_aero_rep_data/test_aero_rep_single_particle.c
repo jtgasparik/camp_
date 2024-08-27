@@ -181,10 +181,10 @@ int test_surface_area_layer(ModelData * model_data, N_Vector state) {
   ret_val += ASSERT_MSG(fabs(eff_sa-eff_sa_expected) < 1.0e-4*eff_sa_expected,
                         "Bad surface area layer");
 
-  printf("\neff radius expected: %d", eff_rad_expected);
-  printf("\nSurface area expected: %d", eff_sa_expected);
-  printf("\nSurface area %d", eff_sa);
-  printf("\nDifference %d", (eff_sa-eff_sa_expected));
+  printf("\neff radius expected: %f", eff_rad_expected);
+  printf("\nSurface area expected: %f", eff_sa_expected);
+  printf("\nSurface area %f", eff_sa);
+  printf("\nDifference %f", fabs(eff_sa-eff_sa_expected));
   return ret_val;
 }
 
