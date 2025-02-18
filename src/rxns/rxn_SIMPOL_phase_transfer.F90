@@ -150,7 +150,7 @@ module camp_rxn_SIMPOL_phase_transfer
     !> Reaction initialization
     procedure :: initialize
     !> Finalize the reaction
-    final :: finalize
+    final :: finalize, finalize_array
   end type rxn_SIMPOL_phase_transfer_t
 
   !> Constructor for rxn_SIMPOL_phase_transfer_t
@@ -245,7 +245,8 @@ contains
       ! Get the unique names in this aerosol representation for the
       ! partitioning species
       unique_spec_names = aero_rep(i_aero_rep)%val%unique_names( &
-              phase_name = phase_name, spec_name = aero_spec_name)
+              phase_name = phase_name, spec_name = aero_spec_name, &
+              phase_is_at_surface = .true.)
 
       ! Skip aerosol representations that do not contain this phase
       if (.not.allocated(unique_spec_names)) cycle
@@ -306,12 +307,14 @@ contains
       ! Get the unique names in this aerosol representation for the
       ! partitioning species
       unique_spec_names = aero_rep(i_aero_rep)%val%unique_names( &
-              phase_name = phase_name, spec_name = aero_spec_name)
+              phase_name = phase_name, spec_name = aero_spec_name, &
+              phase_is_at_surface = .true.)
 
       ! Find the corresponding activity coefficients, if specified
       if (has_act_coeff) then
         unique_act_names = aero_rep(i_aero_rep)%val%unique_names( &
-              phase_name = phase_name, spec_name = act_name)
+              phase_name = phase_name, spec_name = act_name, &
+              phase_is_at_surface = .true.)
         call assert_msg(236251734, size(unique_act_names).eq. &
                         size(unique_spec_names), &
                         "Mismatch of SIMPOL species and activity coeffs"// &
@@ -432,7 +435,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Finalize the reaction
-  elemental subroutine finalize(this)
+  subroutine finalize(this)
 
     !> Reaction data
     type(rxn_SIMPOL_phase_transfer_t), intent(inout) :: this
@@ -445,6 +448,22 @@ contains
             deallocate(this%condensed_data_int)
 
   end subroutine finalize
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !> Finalize an array of reactions
+  subroutine finalize_array(this)
+  
+    !> Array of reaction data
+    type(rxn_SIMPOL_phase_transfer_t), intent(inout) :: this(:)
+
+    integer(kind=i_kind) :: i
+
+    do i = 1, size(this)
+      call finalize(this(i))
+    end do
+
+  end subroutine finalize_array
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

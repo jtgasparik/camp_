@@ -1,21 +1,31 @@
-FROM fedora:37
+FROM intel/oneapi-hpckit:latest
 
-RUN dnf -y update \
-    && dnf -y install \
-        gcc-gfortran \
-        gcc-c++ \
+RUN apt update \
+    && apt install -y software-properties-common \
+    && add-apt-repository universe \
+    && apt update \
+    && apt install -y \
+        build-essential \
         make \
-        metis-devel \
-        lapack-devel \
-        openblas-devel \
+        libhdf5-dev \
+        libnetcdf-dev \
+        libnetcdff-dev \
+        libmetis-dev \
+        liblapack-dev \
+        libopenblas-dev \
+        libgsl-dev \
         cmake \
-    && dnf clean all
+    && apt clean
+
+# set compilers
+ENV CC=icx
+ENV CXX=icpx
+ENV FC=ifx
 
 # Build the SuiteSparse libraries for sparse matrix support
 # (-k included because of problem with SuiteSparse security certificate - 1 Aug 2021)
 RUN curl -kLO http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-5.1.0.tar.gz \
     && tar -zxvf SuiteSparse-5.1.0.tar.gz \
-    && export CXX=/usr/bin/cc \
     && cd SuiteSparse \
     && make install INSTALL=/usr/local BLAS="-L/lib64 -lopenblas"
 
@@ -23,7 +33,6 @@ RUN curl -kLO http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-5.1.0.ta
 RUN curl -LO https://github.com/jacobwilliams/json-fortran/archive/6.1.0.tar.gz \
     && tar -zxvf 6.1.0.tar.gz \
     && cd json-fortran-6.1.0 \
-    && export FC=gfortran \
     && mkdir build \
     && cd build \
     && cmake -D SKIP_DOC_GEN:BOOL=TRUE .. \
@@ -58,12 +67,12 @@ ENV PATH="${PATH}:/usr/local/jsonfortran-gnu-6.1.0/lib"
 # Build CAMP
  RUN mkdir build \
     && cd build \
-    && export JSON_FORTRAN_HOME="/usr/local/jsonfortran-gnu-6.1.0" \
+    && export JSON_FORTRAN_HOME="/usr/local/jsonfortran-intelllvm-6.1.0" \
     && cmake -D CMAKE_BUILD_TYPE=release \
              -D CMAKE_C_FLAGS_DEBUG="-pg" \
              -D CMAKE_Fortran_FLAGS_DEBUG="-pg" \
              -D CMAKE_MODULE_LINKER_FLAGS="-pg" \
              /camp \
-    && make install
+    && make -j install
 
 WORKDIR /build

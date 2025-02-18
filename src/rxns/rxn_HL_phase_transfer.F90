@@ -141,7 +141,7 @@ module camp_rxn_HL_phase_transfer
     !> Reaction initialization
     procedure :: initialize
     !> Finalize the reaction
-    final :: finalize
+    final :: finalize, finalize_array
   end type rxn_HL_phase_transfer_t
 
   !> Constructor for rxn_HL_phase_transfer_t
@@ -238,9 +238,11 @@ contains
       ! Get the unique names in this aerosol representation for the
       ! partitioning species and aerosol-phase water
       unique_spec_names = aero_rep(i_aero_rep)%val%unique_names( &
-              phase_name = phase_name, spec_name = aero_spec_name)
+              phase_name = phase_name, spec_name = aero_spec_name, &
+              phase_is_at_surface = .true.)
       unique_water_names = aero_rep(i_aero_rep)%val%unique_names( &
-              phase_name = phase_name, spec_name = water_name)
+              phase_name = phase_name, spec_name = water_name, &
+              phase_is_at_surface = .true.)
 
       ! Skip aerosol representations that do not contain this phase
       if (.not.allocated(unique_spec_names)) cycle
@@ -311,9 +313,11 @@ contains
       ! Get the unique names in this aerosol representation for the
       ! partitioning species and aerosol-phase water
       unique_spec_names = aero_rep(i_aero_rep)%val%unique_names( &
-              phase_name = phase_name, spec_name = aero_spec_name)
+              phase_name = phase_name, spec_name = aero_spec_name, &
+              phase_is_at_surface = .true.)
       unique_water_names = aero_rep(i_aero_rep)%val%unique_names( &
-              phase_name = phase_name, spec_name = water_name)
+              phase_name = phase_name, spec_name = water_name, &
+              phase_is_at_surface = .true.)
 
       ! Get the phase ids for this aerosol phase
       phase_ids = aero_rep(i_aero_rep)%val%phase_ids(phase_name, is_at_surface=.true.)
@@ -417,7 +421,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Finalize the reaction
-  elemental subroutine finalize(this)
+  subroutine finalize(this)
 
     !> Reaction data
     type(rxn_HL_phase_transfer_t), intent(inout) :: this
@@ -430,6 +434,22 @@ contains
             deallocate(this%condensed_data_int)
 
   end subroutine finalize
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !> Finalize an array of reactions
+  subroutine finalize_array(this)
+  
+    !> Array of reaction data
+    type(rxn_HL_phase_transfer_t), intent(inout) :: this(:)
+
+    integer(kind=i_kind) :: i
+
+    do i = 1, size(this)
+      call finalize(this(i))
+    end do
+
+  end subroutine finalize_array
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

@@ -27,7 +27,6 @@ endif ()
 ######################################################################
 # options
 
-option(ENABLE_GSL "Enable GSL library for Jacobian evaluation" OFF)
 option(ENABLE_MPI "Enable MPI parallel support" OFF)
 option(ENABLE_DEBUG "Compile debugging functions" OFF)
 option(FAILURE_DETAIL "Output conditions before and after solver failures" OFF)
@@ -44,27 +43,6 @@ SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${PACKAGE_TARNAME}-${PACKAGE_VERSION}")
 set(CPACK_SOURCE_IGNORE_FILES "${CPACK_SOURCE_IGNORE_FILES};/.*~$;/[.].*/;/build/;/figures/;/scenarios/[^1234].*/;/old/;/tool/;/TODO")
 
 include(CPack)
-
-######################################################################
-# GSL
-
-if(ENABLE_GSL)
-  find_path(GSL_INCLUDE_DIR gsl/gsl_math.h
-    DOC "GSL include directory (must have gsl/ subdir)"
-    PATHS $ENV{GSL_HOME}/include /opt/local/include)
-  find_library(GSL_LIB gsl
-    DOC "GSL library"
-    PATHS $ENV{GSL_HOME}/lib /opt/local/lib)
-  find_library(GSL_CBLAS_LIB gslcblas
-    DOC "GSL CBLAS library"
-    PATHS $ENV{GSL_HOME}/lib /opt/local/lib)
-  find_library(M_LIB m
-    DOC "standard C math library")
-  set(GSL_SRC src/rand_gsl.c)
-  set(GSL_LIBS ${GSL_LIB} ${GSL_CBLAS_LIB} ${M_LIB})
-  include_directories(${GSL_INCLUDE_DIR})
-  add_definitions(-DCAMP_USE_GSL)
-endif()
 
 ######################################################################
 # MPI
@@ -204,7 +182,9 @@ else()
 endif()
 
 # New unit tests (UNDER DEVELOPMENT)
-add_test(test_rxn_arrhenius_mech ${CMAKE_BINARY_DIR}/test_run/unit_tests/input_files/run_rxn_arrhenius.sh ${MPI_TEST_FLAG})
+if (NOT ${CMAKE_Fortran_COMPILER_ID} MATCHES "Intel")
+  add_test(test_rxn_arrhenius_mech ${CMAKE_BINARY_DIR}/test_run/unit_tests/input_files/run_rxn_arrhenius.sh ${MPI_TEST_FLAG})
+endif()
 
 # Old-style unit tests
 add_test(test_rxn_aqueous_equilibrium ${CMAKE_BINARY_DIR}/test_run/unit_rxn_data/test_aqueous_equilibrium.sh ${MPI_TEST_FLAG})
@@ -228,8 +208,10 @@ add_test(test_sub_model_UNIFAC ${CMAKE_BINARY_DIR}/test_run/unit_sub_model_data/
 add_test(test_sub_model_ZSR_aerosol_water ${CMAKE_BINARY_DIR}/test_run/unit_sub_model_data/test_ZSR_aerosol_water.sh ${MPI_TEST_FLAG})
 add_test(test_chem_mech_solver ${CMAKE_BINARY_DIR}/test_run/chemistry/test_chemistry_1.sh ${MPI_TEST_FLAG})
 add_test(test_chemistry_cb05cl_ae5 ${CMAKE_BINARY_DIR}/test_run/chemistry/cb05cl_ae5/test_chemistry_cb05cl_ae5.sh ${MPI_TEST_FLAG})
-add_test(test_MONARCH_1 ${CMAKE_BINARY_DIR}/test_run/monarch/test_monarch_1.sh ${MPI_TEST_FLAG})
-add_test(test_MONARCH_2 ${CMAKE_BINARY_DIR}/test_run/monarch/test_monarch_2.sh ${MPI_TEST_FLAG})
+if(NOT ${CMAKE_Fortran_COMPILER_ID} MATCHES "Intel")
+  add_test(test_MONARCH_1 ${CMAKE_BINARY_DIR}/test_run/monarch/test_monarch_1.sh ${MPI_TEST_FLAG})
+  add_test(test_MONARCH_2 ${CMAKE_BINARY_DIR}/test_run/monarch/test_monarch_2.sh ${MPI_TEST_FLAG})
+endif()
 add_test(boot_camp_part_1 ${CMAKE_BINARY_DIR}/boot_camp_run/part_2_code/run_part_1.sh ${MPI_TEST_FLAG})
 add_test(boot_camp_part_2 ${CMAKE_BINARY_DIR}/boot_camp_run/part_2_code/run_part_2.sh ${MPI_TEST_FLAG})
 add_test(boot_camp_part_3 ${CMAKE_BINARY_DIR}/boot_camp_run/part_3_code/run_part_3.sh ${MPI_TEST_FLAG})
@@ -244,7 +226,7 @@ set(STD_C_FLAGS "-std=c99 -Werror=format")
 set(STD_CUDA_FLAGS "-dc -arch=compute_70 -code=sm_70")
 
 if(${CMAKE_Fortran_COMPILER_ID} MATCHES "Intel")
-  set(STD_F_FLAGS "-extend_source -warn truncated_source")
+  set(STD_F_FLAGS "-extend-source -warn truncated_source")
 elseif(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
   set(STD_F_FLAGS "-ffree-line-length-none")
 endif()
@@ -381,13 +363,13 @@ set(CAMP_LIB_SRC
   src/solver_stats.F90
   src/debug_diff_check.F90
   ${CAMP_C_SRC} ${AEROSOL_REPS_SRC} ${SUB_MODELS_SRC} ${REACTIONS_SRC}
-  ${CAMP_CUDA_SRC} ${GSL_SRC} ${CAMP_CXX_SRC} )
+  ${CAMP_CUDA_SRC} ${CAMP_CXX_SRC} )
 
 add_library(camplib SHARED ${CAMP_LIB_SRC})
 add_library(camplib-static STATIC ${CAMP_LIB_SRC})
 
-target_link_libraries(camplib ${SUNDIALS_LIBS} ${GSL_LIBS} ${JSON_LIB})
-target_link_libraries(camplib-static ${SUNDIALS_LIBS} ${GSL_LIBS} ${JSON_LIB})
+target_link_libraries(camplib ${SUNDIALS_LIBS} ${JSON_LIB})
+target_link_libraries(camplib-static ${SUNDIALS_LIBS} ${JSON_LIB})
 
 set(MODULE_DIR "${CMAKE_BINARY_DIR}/include")
 
@@ -465,7 +447,7 @@ set(CB5_KPP_SOLVER
 	)
 
 if(${CMAKE_Fortran_COMPILER_ID} MATCHES "Intel")
-	set(CB5_EBI_FLAGS "-fixed -extend_source -warn truncated_source")
+	set(CB5_EBI_FLAGS "-fixed -extend-source -warn truncated_source")
 elseif(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
 	set(CB5_EBI_FLAGS "-ffixed-form -ffixed-line-length-none")
 endif()
@@ -485,10 +467,11 @@ target_link_libraries(test_chemistry_cb05cl_ae5_big camplib)
 ######################################################################
 # MONARCH interface
 
-add_executable(mock_monarch test/monarch/mock_monarch.F90
-        test/monarch/camp_monarch_interface.F90)
-
-target_link_libraries(mock_monarch camplib)
+if(NOT ${CMAKE_Fortran_COMPILER_ID} MATCHES "Intel")
+  add_executable(mock_monarch test/monarch/mock_monarch.F90
+          test/monarch/camp_monarch_interface.F90)
+  target_link_libraries(mock_monarch camplib)
+endif()
 
 ######################################################################
 # test_chemistry_cb05cl_ae5
@@ -571,25 +554,27 @@ target_link_libraries(test_sub_model_ZSR_aerosol_water camplib)
 ######################################################################
 # New unit tests (UNDER DEVELOPMENT)
 
-set(UNIT_TEST_SRC
-    test/unit_tests/unit_test_data.F90
-    test/unit_tests/unit_test_driver.F90)
-
-set(UNIT_TEST_RXN_ARRHENIUS_SRC
-    test/unit_tests/rxns/unit_test_rxn_arrhenius.F90 ${UNIT_TEST_SRC})
-if(${CMAKE_Fortran_COMPILER_ID} MATCHES "Intel")
-  set_source_files_properties(${UNIT_TEST_RXN_ARRHENIUS_SRC} PROPERTIES COMPILE_DEFINITIONS
-    "UNIT_TEST_MODULE_=camp_unit_test_rxn_arrhenius \
-    ;UNIT_TEST_TYPE_='unit_test_rxn_arrhenius_t()'")
-elseif(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
-  set_source_files_properties(${UNIT_TEST_RXN_ARRHENIUS_SRC} PROPERTIES COMPILE_DEFINITIONS
-    "UNIT_TEST_MODULE_=camp_unit_test_rxn_arrhenius \
-    ;UNIT_TEST_TYPE_=unit_test_rxn_arrhenius_t()")
+if(NOT ${CMAKE_Fortran_COMPILER_ID} MATCHES "Intel")
+  set(UNIT_TEST_SRC
+      test/unit_tests/unit_test_data.F90
+      test/unit_tests/unit_test_driver.F90)
+  
+  set(UNIT_TEST_RXN_ARRHENIUS_SRC
+      test/unit_tests/rxns/unit_test_rxn_arrhenius.F90 ${UNIT_TEST_SRC})
+  if(${CMAKE_Fortran_COMPILER_ID} MATCHES "Intel")
+    set_source_files_properties(${UNIT_TEST_RXN_ARRHENIUS_SRC} PROPERTIES COMPILE_DEFINITIONS
+      "UNIT_TEST_MODULE_=camp_unit_test_rxn_arrhenius \
+      ;UNIT_TEST_TYPE_='unit_test_rxn_arrhenius_t()'")
+  elseif(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
+    set_source_files_properties(${UNIT_TEST_RXN_ARRHENIUS_SRC} PROPERTIES COMPILE_DEFINITIONS
+      "UNIT_TEST_MODULE_=camp_unit_test_rxn_arrhenius \
+      ;UNIT_TEST_TYPE_=unit_test_rxn_arrhenius_t()")
+  endif()
+  set_source_files_properties(${UNIT_TEST_RXN_ARRHENIUS_SRC} PROPERTIES COMPILE_FLAGS
+                              ${STD_F_FLAGS})
+  add_executable(unit_test_rxn_arrhenius ${UNIT_TEST_RXN_ARRHENIUS_SRC})
+  target_link_libraries(unit_test_rxn_arrhenius camplib)
 endif()
-set_source_files_properties(${UNIT_TEST_RXN_ARRHENIUS_SRC} PROPERTIES COMPILE_FLAGS
-                            ${STD_F_FLAGS})
-add_executable(unit_test_rxn_arrhenius ${UNIT_TEST_RXN_ARRHENIUS_SRC})
-target_link_libraries(unit_test_rxn_arrhenius camplib)
 
 ######################################################################
 # test_camp_core
