@@ -3,93 +3,40 @@
 ! SPDX-License-Identifier: MIT
 
 !> \file
-!> The camp_rxn_SIMPOL_phase_transfer module.
+!> The camp_rxn_condensed_phase_diffusion module.
 
-!> \page camp_rxn_SIMPOL_phase_transfer CAMP: SIMPOL.1 Phase-Transfer Reaction
+!> \page camp_rxn_condensed_phase_diffusion CAMP: Condensed Phase Diffusion Reaction
 !!
-!! SIMPOL phase transfer reactions are based on the SIMPOL.1 model
-!! calculations of vapor pressure described by Pankow and Asher (2008)
-!! \cite Pankow2008.
+!! Condensed phase diffusion reactions are based on Fick's Law of 
+!! diffusion and align with kinetic modeling (e.g. \cite Shiraiwa et al. (2010))
+!! diffusion representation. 
 !!
-!! Mass accomodation coefficients and condensation rate constants are
-!! calculated using the method of Ervans et al. (2003) \cite Ervens2003 and
-!! references therein. Mass accomodation coefficients (\f$\alpha\f$) are
-!! calculated as:
 !!
-!! \f[
-!!   \Delta H_{obs} = -10 \times (N^*-1) + 7.53 \times (N^{*2/3}-1) - 0.1 \times 10 \quad (\mbox{kcal}\,\mbox{M}^{-1})
-!! \f]
-!! \f[
-!!   \Delta S_{obs} = -13 \times (N^*-1) - 19 \times (N^*-1) + 9.21 \times (N^{*2/3}-1) - 0.1 \times 13 \quad (\mbox{cal}\,\mbox{M}^{-1}\,\mbox{K}^{-1})
-!! \f]
-!! \f[
-!!   \frac{\alpha}{1-\alpha} = e^{\frac{-\Delta G^{*}}{RT}}
-!! \f]
-!! If \f$\Delta H\f$ and \f$\Delta S\f$ are not provided, the mass accomodation
-!! coefficient is assumed to be 0.1 (\cite Zaveri2008).
-!!
-!! Condensation rate constants are calculated following \cite Zaveri2008 as:
-!!  \f[
-!!    k_c = 4 \pi r D_g f_{fs}( K_n, \alpha )
-!!  \f]
-!!  where \f$r\f$ is the radius of the particle(s) [m], \f$D_g\f$ is the
-!! diffusion coefficient of the gas-phase species [\f$\mbox{m}^2\,\mbox{s}^{-1}\f$],
-!! \f$f_{fs}( K_n, \alpha )\f$ is the Fuchs Sutugin transition regime correction
-!! factor [unitless], \f$K_n\f$ is the Knudsen Number [unitess], and \f$\alpha\f$
-!! is the mass accomodation coefficient.
-!!
-!!  Rates can be calculated as:
-!!  \f[
-!!    r_c = [G] N_a k_c
-!!  \f]
-!!  where \f$[G]\f$ is the gas-phase species concentration [ppm], \f$N_a\f$ is
-!! the number concentration of particles [\f$\mbox{particle}\,\mbox{m}^{-3}\f$] and
-!! the rate \f$r_c\f$ is in [\f$\mbox{ppm}\,\mbox{s}^{-1}\f$].
-!!  The particle radius used
-!! to calculate \f$k_{f}\f$ is the effective radius [\f$r_{eff}\f$], which is
-!! taken as the "least-wrong" choice for condensation rates, as it is weighted
-!! to surface area \cite Zender2002 .
-!!
-!! Input data for SIMPOL phase transfer reactions have the following format :
+!! Input data for condensed phase diffusion reactions have the following format :
 !! \code{.json}
-!!   {
-!!     "type" : "SIMPOL_PHASE_TRANSFER",
-!!     "gas-phase species" : "my gas spec",
-!!     "aerosol phase" : "my aero phase",
-!!     "aerosol-phase species" : "my aero spec",
-!!     "aerosol-phase activity coefficient" : "my aero act coeff"
-!!     "B" : [ 123.2e3, -41.24, 2951.2, -1.245e-4 ]
-!!       ...
-!!   }
+!!     {
+!!    "name" : "condensed phase diffusion",
+!!    "type" : "MECHANISM",
+!!    "reactions" : [
+!!      {
+!!        "type" : "DIFFUSION_LAYERS",
+!!        "species": [{
+!!          "phase": "aqueous",
+!!          "name": "H2O_aq"
+!!      },
+!!      {
+!!        "phase": "organic",
+!!        "name": "H2O_org"
+!!      }]
+!!      }
+!!    ]}
 !! \endcode
-!! The key-value pairs \b gas-phase \b species, \b aerosol \b phase and
-!! \b aerosol-phase \b species are required. Only one gas- and one
-!! aerosol-phase species are allowed per phase-transfer reaction. The
-!! key-value pair \b aerosol-phase \b activity \b coefficient is optional.
-!! When it is included its value must be the name of an species of type
-!! \c ACTIVITY_COEFF that is present in the specified aerosol phase. When
-!! it is not included, activity coefficients are assume to be 1.0.
+!! The key-value pairs \b condensed phase and associated \b species 
+!! of the diffusing species are required. The species indicated must 
+!! have an associated diffusion coefficient [m2 s-1] listed as a
+!! property assocaited with the phase it exists in.
 !!
-!! Gas-phase species must include parameters named
-!! \b diffusion \b coeff \b [\b m2 \b s-1], which specifies the diffusion
-!! coefficient in \f$\mbox{m}^2\,\mbox{s}^{-1}\f$, and \b molecular
-!! \b weight \b [\b kg \b mol-1], which specifies the molecular weight of the
-!! species in \f$\mbox{kg}\,\mbox{mol}^{-1}\f$. They may optionally
-!! include the parameter \b N \b star, which will be used to calculate th
-!! mass accomodation coefficient. When this parameter is not included, the
-!! mass accomodation coefficient is assumed to be 1.0.
 !!
-!! The key-value pair \b B is also required and must have a value of an array
-!! of exactly four members that specifies the SIMPOL parameters for the
-!! partitioning species. The \b B parameters can be obtained by summing the
-!! contributions of each functional group present in the partitioning species
-!! to the overall \f$B_{n,i}\f$ for species \f$i\f$, such that:
-!! \f[
-!!   B_{n,i} = \sum_{k} \nu_{k,i} B_{n,k} \forall n \in [1...4]
-!! \f]
-!! where \f$\nu_{k,i}\f$ is the number of functional groups \f$k\f$ in species
-!! \f$i\f$ and the parameters \f$B_{n,k}\f$ for each functional group \f$k\f$
-!! can be found in table 5 of Pankow and Asher (2008) \cite Pankow2008.
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
