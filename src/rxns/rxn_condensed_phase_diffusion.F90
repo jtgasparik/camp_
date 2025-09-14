@@ -40,8 +40,8 @@
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-!> The rxn_SIMPOL_phase_transfer_t type and associated functions.
-module camp_rxn_SIMPOL_phase_transfer
+!> The rxn_condensed_phase_diffusion_t type and associated functions.
+module camp_rxn_condensed_phase_diffusion
 
   use camp_aero_phase_data
   use camp_aero_rep_data
@@ -57,28 +57,17 @@ module camp_rxn_SIMPOL_phase_transfer
   implicit none
   private
 
-#define DELTA_H_ this%condensed_data_real(1)
-#define DELTA_S_ this%condensed_data_real(2)
-#define DIFF_COEFF_ this%condensed_data_real(3)
-#define PRE_C_AVG_ this%condensed_data_real(4)
-#define B1_ this%condensed_data_real(5)
-#define B2_ this%condensed_data_real(6)
-#define B3_ this%condensed_data_real(7)
-#define B4_ this%condensed_data_real(8)
-#define CONV_ this%condensed_data_real(9)
-#define MW_ this%condensed_data_real(10)
 #define NUM_AERO_PHASE_ this%condensed_data_int(1)
-#define GAS_SPEC_ this%condensed_data_int(2)
+#define NUM_AERO_SPECIES_ this%condensed_data_int(2)
 #define NUM_INT_PROP_ 2
-#define NUM_REAL_PROP_ 10
-#define NUM_ENV_PARAM_ 4
+#define NUM_REAL_PROP_ 0
+#define NUM_ENV_PARAM_ 4 
+#define DIFF_COEFF_(x) this%condensed_data_int(NUM_AERO_SPECIES_+x)
+
 #define AERO_SPEC_(x) this%condensed_data_int(NUM_INT_PROP_+x)
-#define AERO_ACT_ID_(x) this%condensed_data_int(NUM_INT_PROP_+NUM_AERO_PHASE_+x)
 #define AERO_PHASE_ID_(x) this%condensed_data_int(NUM_INT_PROP_+2*NUM_AERO_PHASE_+x)
 #define AERO_REP_ID_(x) this%condensed_data_int(NUM_INT_PROP_+3*NUM_AERO_PHASE_+x)
 #define DERIV_ID_(x) this%condensed_data_int(NUM_INT_PROP_+4*NUM_AERO_PHASE_+x)
-#define GAS_ACT_JAC_ID_(x) this%condensed_data_int(NUM_INT_PROP_+1+5*NUM_AERO_PHASE_+x)
-#define AERO_ACT_JAC_ID_(x) this%condensed_data_int(NUM_INT_PROP_+1+6*NUM_AERO_PHASE_+x)
 #define JAC_ID_(x) this%condensed_data_int(NUM_INT_PROP_+1+7*NUM_AERO_PHASE_+x)
 #define PHASE_INT_LOC_(x) this%condensed_data_int(NUM_INT_PROP_+2+10*NUM_AERO_PHASE_+x)
 #define PHASE_REAL_LOC_(x) this%condensed_data_int(NUM_INT_PROP_+2+11*NUM_AERO_PHASE_+x)
@@ -89,21 +78,21 @@ module camp_rxn_SIMPOL_phase_transfer
 #define MASS_JAC_ELEM_(x,e) this%condensed_data_real(PHASE_REAL_LOC_(x)-1+2*NUM_AERO_PHASE_JAC_ELEM_(x)+e)
 #define MW_JAC_ELEM_(x,e) this%condensed_data_real(PHASE_REAL_LOC_(x)-1+3*NUM_AERO_PHASE_JAC_ELEM_(x)+e)
 
-  public :: rxn_SIMPOL_phase_transfer_t
+  public :: rxn_condensed_phase_diffusion_t
 
   !> Generic test reaction data type
-  type, extends(rxn_data_t) :: rxn_SIMPOL_phase_transfer_t
+  type, extends(rxn_data_t) :: rxn_condensed_phase_diffusion_t
   contains
     !> Reaction initialization
     procedure :: initialize
     !> Finalize the reaction
     final :: finalize, finalize_array
-  end type rxn_SIMPOL_phase_transfer_t
+  end type rxn_condensed_phase_diffusion_t
 
-  !> Constructor for rxn_SIMPOL_phase_transfer_t
-  interface rxn_SIMPOL_phase_transfer_t
+  !> Constructor for rxn_condensed_phase_diffusion_t
+  interface rxn_condensed_phase_diffusion_t
     procedure :: constructor
-  end interface rxn_SIMPOL_phase_transfer_t
+  end interface rxn_condensed_phase_diffusion_t
 
 contains
 
@@ -113,7 +102,7 @@ contains
   function constructor() result(new_obj)
 
     !> A new reaction instance
-    type(rxn_SIMPOL_phase_transfer_t), pointer :: new_obj
+    type(rxn_condensed_phase_diffusion_t), pointer :: new_obj
 
     allocate(new_obj)
     new_obj%rxn_phase = AERO_RXN
@@ -128,7 +117,7 @@ contains
   subroutine initialize(this, chem_spec_data, aero_rep, n_cells)
 
     !> Reaction data
-    class(rxn_SIMPOL_phase_transfer_t), intent(inout) :: this
+    class(rxn_condensed_phase_diffusion_t), intent(inout) :: this
     !> Chemical species data
     type(chem_spec_data_t), intent(in) :: chem_spec_data
     !> Aerosol representations
@@ -136,80 +125,123 @@ contains
     !> Number of grid cells to solve simultaneously
     integer(kind=i_kind), intent(in) :: n_cells
 
-    type(property_t), pointer :: spec_props, b_params
-    character(len=:), allocatable :: key_name, gas_spec_name, aero_spec_name
-    character(len=:), allocatable :: phase_name, act_name, error_msg
+    type(string_t), allocatable :: diffusion_phase_names(:)
+    type(string_t), allocatable :: diffusion_species_names(:)
+    !! QQQ: how to i treat this variable?
+    type(aero_phase_data_t), pointer :: aero_phase_data
+
+    type(property_t), pointer :: species, spec_props
+    character(len=:), allocatable :: key_name, aero_spec_name
+    character(len=:), allocatable :: phase_name, species_name, error_msg
     integer(kind=i_kind) :: i_spec, i_aero_rep, n_aero_ids, i_aero_id
-    integer(kind=i_kind) :: i_phase, n_aero_jac_elem, tmp_size
+    integer(kind=i_kind) :: i_phase, i_species, n_aero_jac_elem, tmp_size
     type(string_t), allocatable :: unique_spec_names(:), unique_act_names(:)
     integer(kind=i_kind), allocatable :: phase_ids(:)
-    real(kind=dp) :: temp_real, N_star
-    logical :: has_act_coeff
+    type(index_pair_t), allocatable :: adjacent_phases(:)
+    real(kind=dp) :: temp_real
 
     ! Get the property set
-    if (.not. associated(this%property_set)) call die_msg(382913491, &
+    if (.not. associated(this%property_set)) call die_msg(300992470, &
             "Missing property set needed to initialize reaction")
 
-    ! Get the gas-phase species name
-    key_name = "gas-phase species"
-    call assert_msg(740333884, &
-            this%property_set%get_string(key_name, gas_spec_name), &
-            "Missing gas-phase species in SIMPOL.1 phase transfer reaction")
+    ! Get the species involved in diffusion
+    key_name = "species"
+    call assert_msg(712818751, &
+                    this%property_set%get_property_t(key_name, species), &
+                    "Missing species for condensed phase diffusion "// &
+                    "reaction")
+                    call assert_msg(340551815, species%size() .gt. 0, &
+                    "No species specified for the condensed phase "// &
+                    "diffusion reaction.")
+                    call assert_msg(023007260, species%size() .ge. 3, &
+                    "Too many species specified for condensed phase "// &
+                    "diffusion reaction (two species maximum).")
 
-    ! Get the aerosol phase name
-    key_name = "aerosol phase"
-    call assert_msg(325074932, &
-            this%property_set%get_string(key_name, phase_name), &
-            "Missing aerosol phase in SIMPOL.1 phase-transfer reaction")
 
-    ! Get the aerosol-phase species name
-    key_name = "aerosol-phase species"
-    call assert_msg(988456388, &
-            this%property_set%get_string(key_name, aero_spec_name), &
-            "Missing aerosol-phase species in SIMPOL.1 phase-transfer "// &
-            "reaction")
+    ! Allocate space for phases and species involved in reaction
+    allocate(diffusion_phase_names(species%size()))
+    allocate(diffusion_species_names(species%size()))
+    
+    call species%iter_reset()
+    do i_species = 1, species%size()
+
+      ! Get the species properties
+      call assert_msg(815257799, species%get_property_t(val=species_props), &
+              "Invalid structure for species '"// &
+              diffusion_species_names(i_layer)%string// &
+              "' in condensed phase diffusion reaction.")
+
+      ! Get the phase names
+      key_name = "phase"
+      call assert_msg(354574496, species_props%get_string(key_name, phase_name), &
+              "Missing phase name in condensed phase diffusion reaction.")
+      diffusion_phase_names(i_species)%string = phase_name
+
+      ! Get the associated species names
+      key_name = "name"
+      call assert_msg(629919883, species_props%get_string(key_name, species_name), &
+              "Missing species name in condensed phase reaction.")
+      diffusion_species_names(i_species)%string = species_name
+
+      ! Load phase dataset
+      ! Get the species specific diffusion coefficient
+      ! QQQ: this needs work, how do i load the phase property set?
+      key_name = "diffusion coefficient [m2 s-1]"
+      call assert_msg(690036421, aero_phase_set%val%get_spec_property_set(species_name)% &
+              get_real(key, temp_real), "Missing property 'diffusion coefficient [m2 s-1]' &
+              for '" species_name//error_msg)
+
+      call species%iter_next()
+    end do
+
+    ! Check that the species exist in adjacent layers. 
+    ! For the modal/binned aerosol represetnation (no layers) the adjacent_phases array
+    ! is alwasys 0. 
+    adjacent_phases = aero_rep%adjacent_phases(diffusion_phase_names(1), &
+       diffusion_phase_names(SIZE(diffusion_phase_names)))
+    call assert_msg(051987857, size(adjacent_phases) .gt. 0, &
+       "No adjacent phases found condensed phase diffusion reaction.")
 
     ! Set up a general error message
-    error_msg = " for SIMPOL.1 phase transfer of gas species '"// &
-                gas_spec_name//"' to aerosol-phase species '"// &
-                aero_spec_name//"' in phase '"//phase_name//"'"
-
-    ! Get the aerosol-phase activity coeffcient name
-    key_name = "aerosol-phase activity coefficient"
-    has_act_coeff = this%property_set%get_string(key_name, act_name)
+    error_msg = " for condensed phase diffusion of aerosol species '"// &
+                diffusion_species_names(1)//"' to aerosol species '"// &
+                diffusion_species_names(SIZE(diffusion_species_name))
 
     ! Check for aerosol representations
-    call assert_msg(260518827, associated(aero_rep), &
+    call assert_msg(161043212, associated(aero_rep), &
             "Missing aerosol representation"//error_msg)
-    call assert_msg(590304021, size(aero_rep).gt.0, &
+    call assert_msg(411220610, size(aero_rep).gt.0, &
             "Missing aerosol representation"//error_msg)
 
     ! Count the instances of this phase/species pair
     n_aero_ids = 0
     n_aero_jac_elem = 0
     do i_aero_rep = 1, size(aero_rep)
+      do i_species = 1, species%size()
 
-      ! Get the unique names in this aerosol representation for the
-      ! partitioning species
-      unique_spec_names = aero_rep(i_aero_rep)%val%unique_names( &
-              phase_name = phase_name, spec_name = aero_spec_name, &
-              phase_is_at_surface = .true.)
+        ! Get the unique names in this aerosol representation for the
+        ! partitioning species
+        unique_spec_names = aero_rep(i_aero_rep)%val%unique_names( &
+                phase_name = diffusion_phase_names(i_species), &
+                spec_name = diffusion_species_names(i_species))
 
-      ! Skip aerosol representations that do not contain this phase
-      if (.not.allocated(unique_spec_names)) cycle
+        ! Skip aerosol representations that do not contain this phase
+        if (.not.allocated(unique_spec_names)) cycle
 
-      ! Add these instances to the list
-      n_aero_ids = n_aero_ids + size(unique_spec_names)
+        ! Add these instances to the list
+        n_aero_ids = n_aero_ids + size(unique_spec_names)
 
-      ! Get the number of Jacobian elements for calculations of mass, volume,
-      ! number, etc. for this partitioning into this phase
-      phase_ids = aero_rep(i_aero_rep)%val%phase_ids(phase_name, is_at_surface=.true.)
-      do i_phase = 1, size(phase_ids)
-        n_aero_jac_elem = n_aero_jac_elem + &
-                aero_rep(i_aero_rep)%val%num_jac_elem(phase_ids(i_phase))
+        ! Get the number of Jacobian elements for calculations of mass, volume,
+        ! number, etc. for this partitioning into this phase
+        ! QQQ: this needs work to save the phase ids for each species
+        phase_ids = aero_rep(i_aero_rep)%val%phase_ids(diffusion_phase_names(i_species))
+        do i_phase = 1, size(phase_ids)
+          n_aero_jac_elem = n_aero_jac_elem + &
+                  aero_rep(i_aero_rep)%val%num_jac_elem(phase_ids(i_phase))
+        end do
+
+        deallocate(unique_spec_names)
       end do
-
-      deallocate(unique_spec_names)
 
     end do
 
@@ -229,143 +261,44 @@ contains
     ! Set the number of aerosol-species instances
     NUM_AERO_PHASE_ = n_aero_ids
 
-    ! Get the properties required of the aerosol species
-    call assert_msg(162662115, &
-            chem_spec_data%get_property_set(aero_spec_name, spec_props), &
-            "Missing properties"//error_msg)
-
-    ! Get the aerosol species molecular weight
-    key_name = "molecular weight [kg mol-1]"
-    call assert_msg(839930958, spec_props%get_real(key_name, MW_), &
-            "Missing property 'MW'"//error_msg)
-
-    ! Set the kg/m3 -> ppm conversion prefactor (multiply by T/P to get
-    ! conversion)
-    ! (ppm_x*Pa_air*m^3/K/kg_x) = Pa_air*m^3/mol_air/K * mol_x/kg_x *
-    !                   1.0e6ppm_x*mol_air/mol_x
-    CONV_ = const%univ_gas_const / MW_ * 1.0e6
-
     ! Set the ids of each aerosol-phase species instance
     i_aero_id = 1
     PHASE_INT_LOC_(i_aero_id)  = NUM_INT_PROP_+12*NUM_AERO_PHASE_+3
     PHASE_REAL_LOC_(i_aero_id) = NUM_REAL_PROP_+1
     do i_aero_rep = 1, size(aero_rep)
-
+      do i_species = 1, species%size()
       ! Get the unique names in this aerosol representation for the
       ! partitioning species
       unique_spec_names = aero_rep(i_aero_rep)%val%unique_names( &
-              phase_name = phase_name, spec_name = aero_spec_name, &
-              phase_is_at_surface = .true.)
-
-      ! Find the corresponding activity coefficients, if specified
-      if (has_act_coeff) then
-        unique_act_names = aero_rep(i_aero_rep)%val%unique_names( &
-              phase_name = phase_name, spec_name = act_name, &
-              phase_is_at_surface = .true.)
-        call assert_msg(236251734, size(unique_act_names).eq. &
-                        size(unique_spec_names), &
-                        "Mismatch of SIMPOL species and activity coeffs"// &
-                        error_msg)
-      end if
+              phase_name = diffusion_phase_names(i_species), &
+              spec_name = diffusion_species_names(i_species))
 
       ! Get the phase ids for this aerosol phase
-      phase_ids = aero_rep(i_aero_rep)%val%phase_ids(phase_name, is_at_surface=.true.)
+      phase_ids = aero_rep(i_aero_rep)%val%phase_ids(diffusion_phase_names(i_species))
       ! Add the species concentration and activity coefficient ids to
       ! the condensed data, and set the number of Jacobian elements for
       ! the aerosol representations and the locations of the real data
-      do i_spec = 1, size(unique_spec_names)
-        NUM_AERO_PHASE_JAC_ELEM_(i_aero_id) = &
-              aero_rep(i_aero_rep)%val%num_jac_elem(phase_ids(i_spec))
-        AERO_SPEC_(i_aero_id) = &
-              aero_rep(i_aero_rep)%val%spec_state_id( &
-              unique_spec_names(i_spec)%string)
-        if (has_act_coeff) then
-          AERO_ACT_ID_(i_aero_id) = &
-              aero_rep(i_aero_rep)%val%spec_state_id( &
-              unique_act_names(i_spec)%string)
-        else
-          AERO_ACT_ID_(i_aero_id) = -1
-        end if
-        AERO_PHASE_ID_(i_aero_id) = phase_ids(i_spec)
-        AERO_REP_ID_(i_aero_id) = i_aero_rep
-        i_aero_id = i_aero_id + 1
-        if (i_aero_id .le. NUM_AERO_PHASE_) then
-          PHASE_INT_LOC_(i_aero_id)  = PHASE_INT_LOC_(i_aero_id - 1) + 1 + &
-                                     2*NUM_AERO_PHASE_JAC_ELEM_(i_aero_id - 1)
-          PHASE_REAL_LOC_(i_aero_id) = PHASE_REAL_LOC_(i_aero_id - 1) + &
-                                     4*NUM_AERO_PHASE_JAC_ELEM_(i_aero_id - 1)
-        end if
+        do i_spec = 1, size(unique_spec_names)
+          NUM_AERO_PHASE_JAC_ELEM_(i_aero_id) = &
+                aero_rep(i_aero_rep)%val%num_jac_elem(phase_ids(i_spec))
+          AERO_SPEC_(i_aero_id) = &
+                aero_rep(i_aero_rep)%val%spec_state_id( &
+                unique_spec_names(i_spec)%string)
+          AERO_PHASE_ID_(i_aero_id) = phase_ids(i_spec)
+          AERO_REP_ID_(i_aero_id) = i_aero_rep
+          i_aero_id = i_aero_id + 1
+          if (i_aero_id .le. NUM_AERO_PHASE_) then
+            PHASE_INT_LOC_(i_aero_id)  = PHASE_INT_LOC_(i_aero_id - 1) + 1 + &
+                                       2*NUM_AERO_PHASE_JAC_ELEM_(i_aero_id - 1)
+            PHASE_REAL_LOC_(i_aero_id) = PHASE_REAL_LOC_(i_aero_id - 1) + &
+                                       4*NUM_AERO_PHASE_JAC_ELEM_(i_aero_id - 1)
+          end if
+        end do
       end do
 
       deallocate(unique_spec_names)
 
     end do
-
-    ! Get the SIMPOL.1 parameters
-    key_name = "B"
-    call assert_msg(882881186, &
-            this%property_set%get_property_t(key_name, b_params), &
-            "Missing 'B' parameters"//error_msg)
-    call assert_msg(654885723, b_params%size().eq.4, &
-            "Incorrect number of 'B' parameters"//error_msg)
-    call b_params%iter_reset()
-    call assert_msg(694024883, b_params%get_real(val = B1_), &
-            "Got non-real 'B1' parameter"//error_msg)
-    call b_params%iter_next()
-    call assert_msg(231316411, b_params%get_real(val = B2_), &
-            "Got non-real 'B2' parameter"//error_msg)
-    call b_params%iter_next()
-    call assert_msg(126167907, b_params%get_real(val = B3_), &
-            "Got non-real 'B3' parameter"//error_msg)
-    call b_params%iter_next()
-    call assert_msg(573535753, b_params%get_real(val = B4_), &
-            "Got non-real 'B4' parameter"//error_msg)
-
-    ! Save the index of the gas-phase species in the state variable array
-    GAS_SPEC_ = chem_spec_data%gas_state_id(gas_spec_name)
-
-    ! Make sure the species exists
-    call assert_msg(551477581, GAS_SPEC_.gt.0, &
-            "Missing gas-phase species"//error_msg)
-
-    ! Get the required properties for the gas-phase species
-    call assert_msg(611221674, &
-            chem_spec_data%get_property_set(gas_spec_name, spec_props), &
-            "Missing properties for gas-phase species"//error_msg)
-
-    ! Get N* to calculate the mass accomodation coefficient. If it is not
-    ! present, set DELTA_H_ and DELTA_S_ to zero to indicate a mass
-    ! accomodation coefficient of 1.0
-    ! Mass accomodation equation is based on equations in:
-    ! Ervens, B., et al., 2003. "CAPRAM 2.4 (MODAC mechanism): An extended
-    ! and condensed tropospheric aqueous mechanism and its application."
-    ! J. Geophys. Res. 108, 4426. doi:10.1029/2002JD002202
-    key_name = "N star"
-    if (spec_props%get_real(key_name, N_star)) then
-      ! enthalpy change (kcal mol-1)
-      DELTA_H_ = real(- 10.0d0*(N_star-1.0d0) + &
-              7.53d0*(N_star**(2.0d0/3.0d0)-1.0d0) - 1.0d0, kind=dp)
-      ! entropy change (cal mol-1)
-      DELTA_S_ = real(- 32.0d0*(N_star-1.0d0) + &
-              9.21d0*(N_star**(2.0d0/3.0d0)-1.0d0) - 1.3d0, kind=dp)
-      ! Convert dH and dS to (J mol-1)
-      DELTA_H_ = real(DELTA_H_ * 4184.0d0, kind=dp)
-      DELTA_S_ = real(DELTA_S_ * 4.184d0, kind=dp)
-    else
-      DELTA_H_ = real(0.0, kind=dp)
-      DELTA_S_ = real(0.0, kind=dp)
-    end if
-
-    ! Get the diffusion coefficient (m^2/s)
-    key_name = "diffusion coeff [m2 s-1]"
-    call assert_msg(948176709, spec_props%get_real(key_name, DIFF_COEFF_), &
-            "Missing diffusion coefficient"//error_msg)
-
-    ! Calculate the constant portion of c_rms [m /( K^(1/2) * s )]
-    key_name = "molecular weight [kg mol-1]"
-    call assert_msg(272813400, spec_props%get_real(key_name, temp_real), &
-            "Missing molecular weight"//error_msg)
-    PRE_C_AVG_ = sqrt(8.0*const%univ_gas_const/(const%pi*temp_real))
 
     ! Check the sizes of the data arrays
     tmp_size = PHASE_INT_LOC_(i_aero_id - 1) + 1 + &
@@ -385,7 +318,7 @@ contains
   subroutine finalize(this)
 
     !> Reaction data
-    type(rxn_SIMPOL_phase_transfer_t), intent(inout) :: this
+    type(rxn_condensed_phase_diffusion_t), intent(inout) :: this
 
     if (associated(this%property_set)) &
             deallocate(this%property_set)
@@ -402,7 +335,7 @@ contains
   subroutine finalize_array(this)
   
     !> Array of reaction data
-    type(rxn_SIMPOL_phase_transfer_t), intent(inout) :: this(:)
+    type(rxn_condensed_phase_diffusion_t), intent(inout) :: this(:)
 
     integer(kind=i_kind) :: i
 
@@ -414,4 +347,4 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-end module camp_rxn_SIMPOL_phase_transfer
+end module camp_rxn_condensed_phase_diffusion
