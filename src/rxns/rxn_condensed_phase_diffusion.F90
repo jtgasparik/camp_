@@ -153,7 +153,7 @@ contains
                     call assert_msg(340551815, species%size() .gt. 0, &
                     "No species specified for the condensed phase "// &
                     "diffusion reaction.")
-                    call assert_msg(023007260, species%size() .ge. 3, &
+                    call assert_msg(023007260, species%size() .lt. 3, &
                     "Too many species specified for condensed phase "// &
                     "diffusion reaction (two species maximum).")
 
