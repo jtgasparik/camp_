@@ -79,16 +79,14 @@ void rxn_condensed_phase_diffusion_get_used_jac_elem(ModelData *model_data,
     exit(1);
   }
 
-  for (int i_aero_phase = 0; i_aero_phase < NUM_AERO_PHASE_; i_aero_phase++) {
-    jacobian_register_element(jac, AERO_SPEC_(i_aero_phase), GAS_SPEC_);
-    jacobian_register_element(jac, GAS_SPEC_, AERO_SPEC_(i_aero_phase));
-    jacobian_register_element(jac, AERO_SPEC_(i_aero_phase),
-                              AERO_SPEC_(i_aero_phase));
+  for (int i_aero_phase = 0; i_aero_phase < NUM_ADJACENT_PAIRS_; i_aero_phase++) {
+    jacobian_register_element(jac, PHASE_ID_FIRST_(i_aero_phase), 
+                              PHASE_ID_SECOND_(i_aero_phase));
+    jacobian_register_element(jac, PHASE_ID_SECOND_(i_aero_phase), 
+                              PHASE_ID_FIRST_(i_aero_phase));
+    //jacobian_register_element(jac, AERO_SPEC_(i_aero_phase),
+    //                          AERO_SPEC_(i_aero_phase));
 
-    if (AERO_ACT_ID_(i_aero_phase) > 0) {
-      jacobian_register_element(jac, GAS_SPEC_, AERO_ACT_ID_(i_aero_phase));
-      jacobian_register_element(jac, AERO_SPEC_(i_aero_phase),
-                                AERO_ACT_ID_(i_aero_phase));
     }
 
     for (int i_elem = 0; i_elem < model_data->n_per_cell_state_var; ++i_elem)
@@ -99,8 +97,8 @@ void rxn_condensed_phase_diffusion_get_used_jac_elem(ModelData *model_data,
                                    AERO_PHASE_ID_(i_aero_phase), aero_jac_elem);
     if (n_jac_elem > NUM_AERO_PHASE_JAC_ELEM_(i_aero_phase)) {
       printf(
-          "\n\nERROR Received more Jacobian elements than expected for SIMPOL "
-          "partitioning reaction. Got %d, expected <= %d",
+          "\n\nERROR Received more Jacobian elements than expected for condensed"
+          "phase diffusion reaction. Got %d, expected <= %d",
           n_jac_elem, NUM_AERO_PHASE_JAC_ELEM_(i_aero_phase));
       exit(1);
     }
@@ -281,11 +279,11 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
                               4.0 * radius / (3.0 * MFP_M_));
 #endif
 
-    // Calculate the rate constant for diffusion limited mass transfer to the
-    // aerosol phase (m3/#/s)
-    long double cond_rate =
-        gas_aerosol_transition_rxn_rate_constant(DIFF_COEFF_, MFP_M_, radius, ALPHA_);
-
+    // Calculate the rate constant for diffusion limited mass transfer between
+    // particle layers
+    for (int i_adj_pairs = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; i_adj_pairs++) {
+    long double rate_first =  
+    }
     // Calculate the evaporation rate constant (ppm_x*m^3/kg_x/s)
     long double evap_rate =
         cond_rate * (EQUIL_CONST_ * aero_phase_avg_MW / aero_phase_mass);
