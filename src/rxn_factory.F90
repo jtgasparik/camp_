@@ -199,6 +199,7 @@ module camp_rxn_factory
   use camp_rxn_wennberg_no_ro2
   use camp_rxn_wennberg_tunneling
   use camp_rxn_wet_deposition
+  !use camp_rxn_condensed_phase_diffusion
 
   use iso_c_binding
 
@@ -226,6 +227,7 @@ module camp_rxn_factory
   integer(kind=i_kind), parameter, public :: RXN_WENNBERG_NO_RO2 = 17
   integer(kind=i_kind), parameter, public :: RXN_CONDENSED_PHASE_PHOTOLYSIS = 18
   integer(kind=i_kind), parameter, public :: RXN_SURFACE = 19
+  integer(kind=i_kind), parameter, public :: RXN_CONDENSED_PHASE_DIFFUSION = 20
 
   !> Factory type for chemical reactions
   !!
@@ -301,6 +303,8 @@ contains
         new_obj => rxn_wennberg_no_ro2_t()
       case ("SURFACE")
         new_obj => rxn_surface_t()
+      !case ("CONDENSED_PHASE_DIFFUSION")
+      !  new_obj => rxn_condensed_phase_diffusion_t()
       case default
         call die_msg(367114278, "Unknown chemical reaction type: " &
                 //type_name)
@@ -400,6 +404,8 @@ contains
         rxn_type = RXN_WENNBERG_NO_RO2
       type is (rxn_surface_t)
         rxn_type = RXN_SURFACE
+      !type is (rxn_condensed_phase_diffusion_t)
+      !  rxn_type = RXN_CONDENSED_PHASE_DIFFUSION
       class default
         call die_msg(343941184, "Unknown reaction type.")
     end select
@@ -532,6 +538,8 @@ contains
         rxn_type = RXN_WENNBERG_NO_RO2
       type is (rxn_surface_t)
         rxn_type = RXN_SURFACE
+      !type is (rxn_condensed_phase_diffusion_t)
+      !  rxn_type = RXN_CONDENSED_PHASE_DIFFUSION
       class default
         call die_msg(343941184, "Trying to pack reaction of unknown type.")
     end select
@@ -599,6 +607,8 @@ contains
         rxn => rxn_wennberg_no_ro2_t()
       case (RXN_SURFACE)
         rxn => rxn_surface_t()
+      !case (RXN_CONDENSED_PHASE_DIFFUSION)
+      !  rxn => rxn_condensed_phase_diffusion_t()
       case default
         call die_msg(659290342, &
                 "Trying to unpack reaction of unknown type:"// &

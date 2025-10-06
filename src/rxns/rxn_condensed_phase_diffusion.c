@@ -28,51 +28,33 @@
 #define PER_PARTICLE_MASS 0
 #define TOTAL_PARTICLE_MASS 1
 
-#define DELTA_H_ float_data[0]
-#define DELTA_S_ float_data[1]
-#define DIFF_COEFF_ float_data[2]
-#define PRE_C_AVG_ float_data[3]
-#define B1_ float_data[4]
-#define B2_ float_data[5]
-#define B3_ float_data[6]
-#define B4_ float_data[7]
-#define CONV_ float_data[8]
-#define MW_ float_data[9]
 #define NUM_AERO_PHASE_ int_data[0]
-#define GAS_SPEC_ (int_data[1] - 1)
-#define MFP_M_ rxn_env_data[0]
-#define ALPHA_ rxn_env_data[1]
-#define EQUIL_CONST_ rxn_env_data[2]
-#define KGM3_TO_PPM_ rxn_env_data[3]
-#define NUM_INT_PROP_ 2
-#define NUM_FLOAT_PROP_ 10
+#define NUM_AERO_SPECIES_ int_data[1]
+#define NUM_ADJACENT_PAIRS_ int_data[2]
+
+#define NUM_INT_PROP_ 3
+#define NUM_FLOAT_PROP_ 0
 #define NUM_ENV_PARAM_ 4
-#define AERO_SPEC_(x) (int_data[NUM_INT_PROP_ + x] - 1)
-#define AERO_ACT_ID_(x) (int_data[NUM_INT_PROP_ + NUM_AERO_PHASE_ + x] - 1)
-#define AERO_PHASE_ID_(x) \
-  (int_data[NUM_INT_PROP_ + 2 * (NUM_AERO_PHASE_) + x] - 1)
-#define AERO_REP_ID_(x) \
-  (int_data[NUM_INT_PROP_ + 3 * (NUM_AERO_PHASE_) + x] - 1)
-#define DERIV_ID_(x) (int_data[NUM_INT_PROP_ + 4 * (NUM_AERO_PHASE_) + x])
-#define GAS_ACT_JAC_ID_(x) \
-  int_data[NUM_INT_PROP_ + 1 + 5 * (NUM_AERO_PHASE_) + x]
-#define AERO_ACT_JAC_ID_(x) \
-  int_data[NUM_INT_PROP_ + 1 + 6 * (NUM_AERO_PHASE_) + x]
-#define JAC_ID_(x) (int_data[NUM_INT_PROP_ + 1 + 7 * (NUM_AERO_PHASE_) + x])
-#define PHASE_INT_LOC_(x) \
-  (int_data[NUM_INT_PROP_ + 2 + 10 * (NUM_AERO_PHASE_) + x] - 1)
-#define PHASE_FLOAT_LOC_(x) \
-  (int_data[NUM_INT_PROP_ + 2 + 11 * (NUM_AERO_PHASE_) + x] - 1)
-#define NUM_AERO_PHASE_JAC_ELEM_(x) (int_data[PHASE_INT_LOC_(x)])
-#define PHASE_JAC_ID_(x, s, e) \
-  int_data[PHASE_INT_LOC_(x) + 1 + (s) * NUM_AERO_PHASE_JAC_ELEM_(x) + e]
-#define EFF_RAD_JAC_ELEM_(x, e) float_data[PHASE_FLOAT_LOC_(x) + e]
-#define NUM_CONC_JAC_ELEM_(x, e) \
-  float_data[PHASE_FLOAT_LOC_(x) + NUM_AERO_PHASE_JAC_ELEM_(x) + e]
-#define MASS_JAC_ELEM_(x, e) \
-  float_data[PHASE_FLOAT_LOC_(x) + 2 * NUM_AERO_PHASE_JAC_ELEM_(x) + e]
-#define MW_JAC_ELEM_(x, e) \
-  float_data[PHASE_FLOAT_LOC_(x) + 3 * NUM_AERO_PHASE_JAC_ELEM_(x) + e]
+
+#define DIFF_COEFF_FIRST_
+#define DIFF_COEFF_SECOND_
+#define PHASE_ID_FIRST_
+#define PHASE_ID_SECOND_
+#define AERO_SPEC_(x)
+#define AERO_ACT_ID_(x) 
+#define AERO_PHASE_ID_(x) 
+#define AERO_REP_ID_(x) 
+#define DERIV_ID_(x) 
+#define GAS_ACT_JAC_ID_(x) 
+#define AERO_ACT_JAC_ID_(x) 
+#define JAC_ID_(x) 
+#define PHASE_INT_LOC_(x) 
+#define PHASE_FLOAT_LOC_(x) 
+#define NUM_AERO_PHASE_JAC_ELEM_(x)
+#define PHASE_JAC_ID_(x, s, e) 
+#define EFF_RAD_JAC_ELEM_(x, e) 
+#define NUM_CONC_JAC_ELEM_(x, e) 
+#define MASS_JAC_ELEM_(x, e) 
 
 /** \brief Flag Jacobian elements used by this reaction
  *
@@ -81,7 +63,7 @@
  * \param rxn_float_data Pointer to the reaction floating-point data
  * \param jac Jacobian
  */
-void rxn_SIMPOL_phase_transfer_get_used_jac_elem(ModelData *model_data,
+void rxn_condensed_phase_diffusion_get_used_jac_elem(ModelData *model_data,
                                                  int *rxn_int_data,
                                                  double *rxn_float_data,
                                                  Jacobian *jac) {
@@ -97,7 +79,6 @@ void rxn_SIMPOL_phase_transfer_get_used_jac_elem(ModelData *model_data,
     exit(1);
   }
 
-  jacobian_register_element(jac, GAS_SPEC_, GAS_SPEC_);
   for (int i_aero_phase = 0; i_aero_phase < NUM_AERO_PHASE_; i_aero_phase++) {
     jacobian_register_element(jac, AERO_SPEC_(i_aero_phase), GAS_SPEC_);
     jacobian_register_element(jac, GAS_SPEC_, AERO_SPEC_(i_aero_phase));
@@ -143,7 +124,7 @@ void rxn_SIMPOL_phase_transfer_get_used_jac_elem(ModelData *model_data,
           "\n\nERROR setting used Jacobian elements in SIMPOL phase "
           "transfer reaction %d %d\n\n",
           i_used_elem, n_jac_elem);
-      rxn_SIMPOL_phase_transfer_print(rxn_int_data, rxn_float_data);
+      rxn_condensed_phase_diffusion_print(rxn_int_data, rxn_float_data);
       exit(1);
     }
   }
@@ -160,7 +141,7 @@ void rxn_SIMPOL_phase_transfer_get_used_jac_elem(ModelData *model_data,
  * \param rxn_int_data Pointer to the reaction integer data
  * \param rxn_float_data Pointer to the reaction floating-point data
  */
-void rxn_SIMPOL_phase_transfer_update_ids(ModelData *model_data, int *deriv_ids,
+void rxn_condensed_phase_diffusion_update_ids(ModelData *model_data, int *deriv_ids,
                                           Jacobian jac, int *rxn_int_data,
                                           double *rxn_float_data) {
   int *int_data = rxn_int_data;
@@ -217,50 +198,13 @@ void rxn_SIMPOL_phase_transfer_update_ids(ModelData *model_data, int *deriv_ids,
  * \param rxn_float_data Pointer to the reaction floating-point data
  * \param rxn_env_data Pointer to the environment-dependent parameters
  */
-void rxn_SIMPOL_phase_transfer_update_env_state(ModelData *model_data,
+void rxn_condensed_phase_diffusion_update_env_state(ModelData *model_data,
                                                 int *rxn_int_data,
                                                 double *rxn_float_data,
                                                 double *rxn_env_data) {
   int *int_data = rxn_int_data;
   double *float_data = rxn_float_data;
   double *env_data = model_data->grid_cell_env;
-
-  // Calculate the mass accomodation coefficient if the N* parameter
-  // was provided, otherwise set it to 0.1 (per Zaveri 2008)
-  ALPHA_ = 0.1;
-  if (DELTA_H_ != 0.0 || DELTA_S_ != 0.0) {
-    double del_G = DELTA_H_ - TEMPERATURE_K_ * DELTA_S_;
-    ALPHA_ = exp(-del_G / (UNIV_GAS_CONST_ * TEMPERATURE_K_));
-    ALPHA_ = ALPHA_ / (1.0 + ALPHA_);
-  }
-
-  // replaced by transition-regime rate equation
-#if 0
-  // Save c_rms * mass_acc for use in mass transfer rate calc
-  MFP_M_ = PRE_C_AVG_ * sqrt(TEMPERATURE_K_) * mass_acc;  // [m/s]
-#endif
-
-  /// save the mean free path [m] for calculating condensation rates
-  MFP_M_ = mean_free_path__m(DIFF_COEFF_, TEMPERATURE_K_, MW_);
-
-  // SIMPOL.1 vapor pressure [Pa]
-  double vp = B1_ / TEMPERATURE_K_ + B2_ + B3_ * TEMPERATURE_K_ +
-              B4_ * log(TEMPERATURE_K_);
-  vp = 101325.0 * pow(10, vp);
-
-  // Calculate the conversion from kg_x/m^3 -> ppm_x
-  KGM3_TO_PPM_ = CONV_ * TEMPERATURE_K_ / PRESSURE_PA_;
-
-  // Calculate the partitioning coefficient K_eq (ppm_x/kg_x*kg_tot)
-  // such that for partitioning species X at equilibrium:
-  //   [X]_gas = [X]_aero * activity_coeff_X * K_eq * MW_tot_aero / [tot]_aero
-  // where 'tot' indicates all species within an aerosol phase combined
-  // with []_gas in (ppm) and []_aero in (kg/m^3)
-  EQUIL_CONST_ = vp              // Pa_x / (mol_x_aero/mol_tot_aero)
-                 / PRESSURE_PA_  // 1/Pa_air
-                 / MW_           // mol_x_aero/kg_x_aero
-                 * 1.0e6;        // ppm_x / (Pa_x/P_air)
-                                 // = ppm_x * mol_tot_aero / kg_x_aero
 
   return;
 }
@@ -276,7 +220,7 @@ void rxn_SIMPOL_phase_transfer_update_env_state(ModelData *model_data,
  * \param time_step Current time step being computed (s)
  */
 #ifdef CAMP_USE_SUNDIALS
-void rxn_SIMPOL_phase_transfer_calc_deriv_contrib(
+void rxn_condensed_phase_diffusion_calc_deriv_contrib(
     ModelData *model_data, TimeDerivative time_deriv, int *rxn_int_data,
     double *rxn_float_data, double *rxn_env_data, realtype time_step) {
   int *int_data = rxn_int_data;
@@ -412,7 +356,7 @@ void rxn_SIMPOL_phase_transfer_calc_deriv_contrib(
  * \param time_step Current time step being calculated (s)
  */
 #ifdef CAMP_USE_SUNDIALS
-void rxn_SIMPOL_phase_transfer_calc_jac_contrib(ModelData *model_data,
+void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
                                                 Jacobian jac, int *rxn_int_data,
                                                 double *rxn_float_data,
                                                 double *rxn_env_data,
@@ -748,35 +692,22 @@ void rxn_SIMPOL_phase_transfer_calc_jac_contrib(ModelData *model_data,
  * \param rxn_int_data Pointer to the reaction integer data
  * \param rxn_float_data Pointer to the reaction floating-point data
  */
-void rxn_SIMPOL_phase_transfer_print(int *rxn_int_data,
+void rxn_condensed_phase_diffusion_print(int *rxn_int_data,
                                      double *rxn_float_data) {
   int *int_data = rxn_int_data;
   double *float_data = rxn_float_data;
 
-  printf("\n\nSIMPOL.1 Phase Transfer reaction\n");
-  printf("\ndelta H: %le delta S: %le diffusion coeff: %le Pre C_avg: %le",
-         DELTA_H_, DELTA_S_, DIFF_COEFF_, PRE_C_AVG_);
-  printf("\nB1: %le B2: %le B3:%le B4: %le", B1_, B2_, B3_, B4_);
-  printf("\nconv: %le MW: %le", CONV_, MW_);
+  printf("\n\nCondensed Phase Diffusion reaction\n");
   printf("\nNumber of aerosol phases: %d", NUM_AERO_PHASE_);
-  printf("\nGas-phase species id: %d", GAS_SPEC_);
-  printf("\nGas-phase derivative id: %d", DERIV_ID_(0));
-  printf("\ndGas/dGas Jac id: %d", JAC_ID_(0));
   printf("\n*** Aerosol phase data ***");
   for (int i = 0; i < NUM_AERO_PHASE_; ++i) {
     printf("\n  Aerosol species id: %d", AERO_SPEC_(i));
-    printf("\n  Activity coefficient id: %d", AERO_ACT_ID_(i));
     printf("\n  Aerosol phase id: %d", AERO_PHASE_ID_(i));
     printf("\n  Aerosol representation id: %d", AERO_REP_ID_(i));
     printf("\n  Aerosol species derivative id: %d", DERIV_ID_(i + 1));
-    printf("\n  dGas/dAct coeff  Jac id: %d", GAS_ACT_JAC_ID_(i));
-    printf("\n  dAero/dAct coeff Jac id: %d", AERO_ACT_JAC_ID_(i));
-    printf("\n  dAero/dGas  Jac id: %d", JAC_ID_(1 + i * 3));
-    printf("\n  dGas/dAero  Jac id: %d", JAC_ID_(2 + i * 3));
     printf("\n  dAero/dAero Jac id: %d", JAC_ID_(3 + i * 3));
     printf("\n  Number of aerosol-phase species Jac elements: %d",
            NUM_AERO_PHASE_JAC_ELEM_(i));
-    printf("\n  dGas/dx ids:");
     for (int j = 0; j < NUM_AERO_PHASE_JAC_ELEM_(i); ++j)
       printf(" %d", PHASE_JAC_ID_(i, JAC_GAS, j));
     printf("\n  dAero/dx ids:");
