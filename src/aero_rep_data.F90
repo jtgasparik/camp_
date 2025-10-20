@@ -121,6 +121,7 @@ module camp_aero_rep_data
     !> Get the number of Jacobian elements for calculations of mass, volume,
     !! number, etc for a particular phase
     procedure(num_jac_elem), deferred :: num_jac_elem
+    procedure(adjacent_phases), deferred :: adjacent_phases
     !> Load data from an input file
     procedure :: load
     !> Get the name of the aerosol representation
@@ -383,6 +384,25 @@ interface
     integer(kind=i_kind), intent(in) :: phase_id
 
   end function num_jac_elem
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !> Determine if specified phase(s) exist in adjacent laters. Returns array
+  !! of phase_ids for ajdacent phases first and second.
+  function adjacent_phases(this, phase_name_first, &
+                           phase_name_second) result (index_pairs)
+    use camp_util,                                       only : i_kind
+    import :: aero_rep_data_t, index_pair_t
+
+    !> Aerosol respresentation data
+    class(aero_rep_data_t), intent(in) :: this
+    !> Function output of phase_ids for first and second phase
+    type(index_pair_t), allocatable :: index_pairs(:)
+    !> Phase names
+    character(len=*), intent(in) :: phase_name_first
+    character(len=*), intent(in) :: phase_name_second
+
+  end function adjacent_phases
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
