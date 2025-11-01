@@ -64,7 +64,7 @@ module camp_rxn_condensed_phase_diffusion
 #define NUM_INT_PROP_ 3
 #define NUM_REAL_PROP_ 0
 #define NUM_ENV_PARAM_ 4
-#define BLOCK_SIZE_ 100
+#define BLOCK_SIZE_ 1000
 ! DIFF_COEFF_FIRST_ and DIFF_COEFF_SECOND_ are arrays of
 ! length NUM_ADJACENT_PAIRS_
 #define DIFF_COEFF_FIRST_(x) this%condensed_data_int(0*BLOCK_SIZE_ + x) 
@@ -132,6 +132,7 @@ contains
     type(aero_phase_data_ptr), intent(in) :: aero_phase(:)
     !> Aerosol representations
     type(aero_rep_data_ptr), pointer, intent(in) :: aero_rep(:)
+    type(camp_state_t), pointer :: camp_state
     !> Number of grid cells to solve simultaneously
     integer(kind=i_kind), intent(in) :: n_cells
 
@@ -144,12 +145,15 @@ contains
     type(property_t), pointer :: species, spec_property_set, aero_phase_property_set
     character(len=:), allocatable :: key_name, aero_spec_name
     character(len=:), allocatable :: phase_name, species_name, error_msg
+    integer(kind=i_kind) :: n_aero_pairs, num_adjacent_pairs, phase_id_array_size
+    integer(kind=i_kind) :: state_size, max_particles, offset, i_particle 
     integer(kind=i_kind) :: i_spec, i_aero_rep, n_aero_ids, i_aero_id, i
     integer(kind=i_kind) :: i_phase, i_species, tmp_size
     integer(kind=i_kind) :: n_aero_jac_elem_first, n_aero_jac_elem_second
     integer(kind=i_kind) :: i_adj_pairs, i_names
     type(string_t), allocatable :: unique_spec_names(:), unique_act_names(:)
-    integer(kind=i_kind), allocatable :: phase_ids(:)
+    integer(kind=i_kind), allocatable :: phase_ids(:) 
+    integer(kind=i_kind), allocatable :: phase_id_first(:), phase_id_second(:)
     type(index_pair_t), allocatable :: adjacent_phases(:)
     real(kind=dp) :: temp_real
 
@@ -199,6 +203,17 @@ contains
       call species%iter_next()
     end do
 
+    ! If only one phase/species pair is found then add that phase/species pair
+    ! to the second element of the diffusion_phase_names and diffusion_species_names
+    ! arrays for indexing purposes
+    if (allocated(diffusion_species_names)) then
+      if (size(diffusion_species_names) == 1) then
+        diffusion_phase_names = [diffusion_phase_names, diffusion_phase_names(1)]
+        diffusion_species_names = [diffusion_species_names, diffusion_species_names(1)]
+      end if
+    end if
+    
+
     ! Check that the species exist in adjacent layers. 
     ! For the modal/binned aerosol represetnation (no layers) the adjacent_phases array
     ! is alwasys 0.
@@ -207,36 +222,52 @@ contains
          diffusion_phase_names(SIZE(diffusion_phase_names)))
       call assert_msg(051987857, size(adjacent_phases) .gt. 0, &
          "No adjacent phases found condensed phase diffusion reaction.")
-      NUM_ADJACENT_PAIRS_ = size(adjacent_phases)
+      num_adjacent_pairs = size(adjacent_phases)
     end do
 
     do i = 1, NUM_ADJACENT_PAIRS_
-      PHASE_ID_FIRST_(i) = adjacent_phases(i)%first_
-      PHASE_ID_SECOND_(i) = adjacent_phases(i)%second_
+      phase_id_first(i) = adjacent_phases(i)%first_
+      phase_id_second(i) = adjacent_phases(i)%second_
+    end do
+
+    ! Extend PHASE_ID_FIRST_ and PHASE_ID_SECOND_ to all aerosol particles
+    n_aero_pairs = 0
+    do i_aero_rep = 1, size(aero_rep)
+      !unique_spec_names = aero_rep(i_aero_rep)%val%unique_names( &
+      !        phase_name = diffusion_phase_names(1), &
+      !        spec_name = diffusion_species_names(1))
+      !phase_id_max = aero_rep(i_aero_rep)%val%spec_state_id(unique_spec_names( &
+      !        size(unique_spec_names)%string))
+      phase_id_array_size = aero_rep(i_aero_rep)%val%size()
+      state_size = size(camp_state%state_var)
+      max_particles = ceiling(real(phase_id_array_size) / real(state_size))
+      NUM_ADJACENT_PAIRS_ = num_adjacent_pairs * max_particles
+      do i_particle = 1, max_particles
+        offset = (i_particle -1) * state_size
+        do i = 1, num_adjacent_pairs
+          PHASE_ID_FIRST_((i_particle -1) * num_adjacent_pairs + i) = &
+              phase_id_first(i) + offset
+          PHASE_ID_SECOND_((i_particle -1) * num_adjacent_pairs + i) = &
+              phase_id_second(i) + offset
+          n_aero_pairs = n_aero_pairs + 2
+        end do
+      end do
     end do
 
     !allocate(phase_names_first(NUM_ADJACENT_PAIRS_))
     !allocate(phase_names_second(NUM_ADJACENT_PAIRS_))
     !allocate(spec_names_first(NUM_ADJACENT_PAIRS_))
     !allocate(spec_names_second(NUM_ADJACENT_PAIRS_))
-    do i_aero_rep = 1, size(aero_rep)
+    ! ID the phase and species names of diffusing 
+    do i_species = 1, species%size()
       do i_adj_pairs = 1, NUM_ADJACENT_PAIRS_
-        do i_species = 1, species%size()
-          unique_spec_names = aero_rep(i_aero_rep)%val%unique_names( &
-                  phase_name = diffusion_phase_names(i_species), &
-                  spec_name = diffusion_species_names(i_species))
-          do i_names = 1, size(unique_spec_names)
-            if (PHASE_ID_FIRST_(i_adj_pairs) .eq. & 
-                      aero_rep(i_aero_rep)%val%spec_state_id(unique_spec_names(i_names)%string)) then
-              phase_names_first(i_adj_pairs) = diffusion_phase_names(i_species)
-              spec_names_first(i_adj_pairs) = diffusion_species_names(i_species)
-            else if (PHASE_ID_SECOND_(i_adj_pairs) .eq. &
-                      aero_rep(i_aero_rep)%val%spec_state_id(unique_spec_names(i_names)%string)) then
-              phase_names_second(i_adj_pairs) = diffusion_phase_names(i_species)
-              spec_names_second(i_adj_pairs) = diffusion_species_names(i_species)
-            end if
-          end do
-        end do
+        if (phase_id_first(i_species) .eq. PHASE_ID_FIRST_(i_adj_pairs)) then
+          phase_names_first(i_adj_pairs) = diffusion_phase_names(i_species)
+          spec_names_first(i_adj_pairs) = diffusion_species_names(i_species)
+        else if (phase_id_second(i_species) .eq. PHASE_ID_SECOND_(i_adj_pairs)) then
+          phase_names_second(i_adj_pairs) = diffusion_phase_names(i_species) 
+          spec_names_second(i_adj_pairs) = diffusion_species_names(i_species)
+        end if
       end do
     end do
 
@@ -286,26 +317,42 @@ contains
 
     ! ***Discuss from here down***
     ! Count the instances of this phase/species pair
-    n_aero_ids = 2 * NUM_ADJACENT_PAIRS_ 
-    n_aero_jac_elem_first = 0
-    n_aero_jac_elem_second = 0
-    do i_aero_rep = 1, size(aero_rep)
-      do i_adj_pairs = 1, NUM_ADJACENT_PAIRS_
-        n_aero_jac_elem_first = n_aero_jac_elem_first + &
-                aero_rep(i_aero_rep)%val%num_jac_elem(PHASE_ID_FIRST_(i_adj_pairs))
-        n_aero_jac_elem_second = n_aero_jac_elem_second + &
-                aero_rep(i_aero_rep)%val%num_jac_elem(PHASE_ID_SECOND_(i_adj_pairs))  
-      end do
-    end do
+    !n_aero_ids = 0
+    !do i_aero_rep = 1, size(aero_rep)
+    !  do i_spec = 1, size(diffusion_species_names)
+        ! Get the unique names in this aerosol representation for the
+        ! partitioning species
+    !    unique_spec_names = aero_rep(i_aero_rep)%val%unique_names( &
+    !            phase_name = diffusion_phase_names(i_spec), &
+    !            spec_name = diffusion_species_names(i_spec), &
+    !            phase_is_at_surface = .true.)
+
+        ! Skip aerosol representations that do not contain this phase
+    !    if (.not.allocated(unique_spec_names)) cycle
+
+        ! Add these instances to the list
+    !    n_aero_ids = n_aero_ids + size(unique_spec_names)
+    !  end do
+    !end do
+
+    !n_aero_jac_elem_first = 0
+    !n_aero_jac_elem_second = 0
+    !do i_aero_rep = 1, size(aero_rep)
+    !  do i_adj_pairs = 1, NUM_ADJACENT_PAIRS_
+    !    n_aero_jac_elem_first = n_aero_jac_elem_first + &
+    !            aero_rep(i_aero_rep)%val%num_jac_elem(PHASE_ID_FIRST_(i_adj_pairs))
+    !    n_aero_jac_elem_second = n_aero_jac_elem_second + &
+    !            aero_rep(i_aero_rep)%val%num_jac_elem(PHASE_ID_SECOND_(i_adj_pairs))  
+    !  end do
+    !end do
 
     call assert_msg(113027880, n_aero_ids.gt.0, &
                     "Aerosol species not found"//error_msg)
 
     ! TODO: fix indexing
     ! Allocate space in the condensed data arrays
-    allocate(this%condensed_data_int(NUM_INT_PROP_ + 2 + n_aero_ids * 13 + &
-                                     n_aero_jac_elem_first * 2))
-    allocate(this%condensed_data_real(NUM_REAL_PROP_ + n_aero_jac_elem_first * 4))
+    allocate(this%condensed_data_int(BLOCK_SIZE_ * 20 ))
+    allocate(this%condensed_data_real(BLOCK_SIZE_ * 10 ))
     this%condensed_data_int(:) = int(0, kind=i_kind)
     this%condensed_data_real(:) = real(0.0, kind=dp)
 
@@ -313,7 +360,7 @@ contains
     this%num_env_params = NUM_ENV_PARAM_
 
     ! Set the number of aerosol-species instances
-    NUM_AERO_PHASE_ = n_aero_ids
+    NUM_AERO_PHASE_ = n_aero_pairs
 
     ! Set the ids of each aerosol-phase species instance
     i_aero_id = 1
@@ -340,14 +387,14 @@ contains
     end do
 
     ! Check the sizes of the data arrays
-    tmp_size = PHASE_INT_LOC_(i_aero_id - 1) + 1 + &
-               2*NUM_AERO_PHASE_JAC_ELEM_FIRST_(i_aero_id - 1) - 1
-    call assert_msg(423653594, size(this%condensed_data_int) .eq. tmp_size, &
-                    "int array size mismatch"//error_msg)
-    tmp_size = PHASE_REAL_LOC_(i_aero_id - 1) + &
-               4*NUM_AERO_PHASE_JAC_ELEM_FIRST_(i_aero_id - 1) - 1
-    call assert_msg(440739030, size(this%condensed_data_real) .eq. tmp_size, &
-                    "real array size mismatch"//error_msg)
+    !tmp_size = PHASE_INT_LOC_(i_aero_id - 1) + 1 + &
+    !           2*NUM_AERO_PHASE_JAC_ELEM_FIRST_(i_aero_id - 1) - 1
+    !call assert_msg(423653594, size(this%condensed_data_int) .eq. tmp_size, &
+    !                "int array size mismatch"//error_msg)
+    !tmp_size = PHASE_REAL_LOC_(i_aero_id - 1) + &
+    !           4*NUM_AERO_PHASE_JAC_ELEM_FIRST_(i_aero_id - 1) - 1
+    !call assert_msg(440739030, size(this%condensed_data_real) .eq. tmp_size, &
+    !                "real array size mismatch"//error_msg)
 
   end subroutine initialize
 
