@@ -798,7 +798,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    !> Determine is specified phase(s) exist in adjacent layers. Returns array
+    !> Determine if specified phase(s) exist in adjacent layers. Returns array
     !! of phase_ids for adjacent phases first and second.
 
     function adjacent_phases(this, phase_name_first, &

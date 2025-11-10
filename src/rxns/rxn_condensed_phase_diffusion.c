@@ -28,6 +28,7 @@
 #define NUM_AERO_PHASE_ int_data[0]
 #define NUM_AERO_SPECIES_ int_data[1]
 #define NUM_ADJACENT_PAIRS_ int_data[2]
+#define PARTICLE_STATE_SIZE_ int_data[3]
 
 #define NUM_INT_PROP_ 3
 #define NUM_FLOAT_PROP_ 0
@@ -39,7 +40,7 @@
 #define PHASE_ID_FIRST_(x) (int_data[2*BLOCK_SIZE + x]-1)
 #define PHASE_ID_SECOND_(x) (int_data[3*BLOCK_SIZE + x]-1)
 #define AERO_REP_ID_(x) (int_data[4*BLOCK_SIZE + x]-1)
-#define DERIV_ID_(x) (int_data[5*BLOCK_SIZE + x]-1)
+#define DERIV_ID_(x) (int_data[5*BLOCK_SIZE + x])
 #define JAC_ID_(x) (int_data[6*BLOCK_SIZE + x]-1)
 #define PHASE_INT_LOC_(x) (int_data[7*BLOCK_SIZE + x]-1)
 #define PHASE_FLOAT_LOC_(x) (int_data[8*BLOCK_SIZE + x]-1)
@@ -145,9 +146,9 @@ void rxn_condensed_phase_diffusion_update_ids(ModelData *model_data, int *deriv_
   double *float_data = rxn_float_data;
 
   // Update the time derivative ids for adjacent condensed phase pairs
-  for (int i_adj_pair = 0, i_deriv = 0; i_adj_pair < NUM_ADJACENT_PAIRS_; i_pair++) {
-      DERIV_ID_(i_deriv++) = deriv_ids[PHASE_ID_FIRST_(i_pair)];
-      DERIV_ID_(i_deriv++) = deriv_ids[PHASE_ID_SECOND_(i_pair)];
+  for (int i_adj_pair = 0, i_deriv = 0; i_adj_pair < NUM_ADJACENT_PAIRS_; i_adj_pair++) {
+      DERIV_ID_(i_deriv++) = deriv_ids[PHASE_ID_FIRST_(i_adj_pair)];
+      DERIV_ID_(i_deriv++) = deriv_ids[PHASE_ID_SECOND_(i_adj_pair)];
   }
 
 /*
@@ -229,7 +230,7 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
   double *env_data = model_data->grid_cell_env;
 
   // Calculate derivative contributions for each aerosol phase
-  for (int i_adj_pairs = 0; i_deriv = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; i_adj_pairs++) {
+  for (int i_adj_pairs = 0, i_deriv = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; i_adj_pairs++) {
     // Get the effective radius (m) of the outer layer
     realtype radius_outer;
     aero_rep_get_effective_radius__m(
@@ -237,16 +238,32 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
         AERO_REP_ID_(i_adj_pairs), // aerosol representation index
         PHASE_ID_FIRST_(i_adj_pairs), // first phase id
         &radius_outer, // outer layer effective radius (m)
-        NULL); // partial derivative
+        NULL); // partial derivative 
 
     // Get the effective radius (m) of the inner layer
-    realtype radius_inner_first;
+    realtype radius_interface;
     aero_rep_get_effective_radius__m(
         model_data, // model data
         AERO_REP_ID_(i_adj_pairs), // aerosol representation index
         PHASE_ID_SECOND_(i_adj_pairs), // first phase id
-        &radius_inner, // inner layer effective radius (m)
+        &radius_interface, // interface layer effective radius (m)
         NULL); // partial derivative
+
+    // Get the effective radius of the layer below the layers considered
+    realtype radius_inner;
+    for (int j = PHASE_ID_SECOND_(i_adj_pairs) + 1; j <= PARTICLE_STATE_SIZE_; j++) {
+      aero_rep_get_effective_radius__m(
+          model_data, // model data
+          AERO_REP_ID_(i_adj_pairs), // aerosol representation index
+          j, // first phase id
+          &radius_inner, // inner layer effective radius (m)
+          NULL); // partial derivative
+      if (radius_inner < radius_interface) {
+        break; 
+      } else if (radius_inner >= radius_interface) {
+        radius_inner = radius_interface;
+      }
+    }  
 
     // Get the interface surface area (m2)
     realtype eff_sa;
@@ -263,6 +280,7 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
     aero_phase_get_volume__m3_m3(
         model_data, //model data
         PHASE_ID_FIRST_(i_adj_pairs), // first phase id
+        state,
         &volume_phase_first, // volume of first phase
         NULL); // partial derivative
 
@@ -271,6 +289,7 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
     aero_phase_get_volume__m3_m3(
         model_data, //model data
         PHASE_ID_SECOND_(i_adj_pairs), // first phase id
+        state,
         &volume_phase_second, // volume of second phase
         NULL); // partial derivative
 
@@ -279,15 +298,22 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
     long double rate_first = eff_sa / volume_phase_first;
     long double rate_second = eff_sa / volume_phase_second;
     
-    // TODO: modify so there is a thickess of both layers
-    realtype layer_thickness = radius_outer - radius_inner;
-    rate_first *= ((-DIFF_COEFF_FIRST_(i_adj_pairs) / layer_thickness) 
+    realtype layer_thickness_first = radius_outer - radius_interface;
+    realtype layer_thickness_second;
+    if (fabs(radius_inner - radius_interface) < 1e-12)
+      layer_thickness_second = radius_interface;
+    else if (radius_inner < radius_interface)
+      layer_thickness_second = radius_interface - radius_inner;
+    else
+      layer_thickness_second = 0.0;  // optional safety fallback 
+
+    rate_first *= ((-DIFF_COEFF_FIRST_(i_adj_pairs) / layer_thickness_first) 
                     * state[PHASE_ID_FIRST_(i_adj_pairs)] +
-                    (DIFF_COEFF_SECOND_(i_adj_pairs) / layer_thickness) 
+                    (DIFF_COEFF_SECOND_(i_adj_pairs) / layer_thickness_second) 
                     * state[PHASE_ID_SECOND_(i_adj_pairs)]); 
-    rate_second *= ((DIFF_COEFF_FIRST_(i_adj_pairs) / layer_thickness)
+    rate_second *= ((DIFF_COEFF_FIRST_(i_adj_pairs) / layer_thickness_first)
                     * state[PHASE_ID_FIRST_(i_adj_pairs)] -
-                    (DIFF_COEFF_SECOND_(i_adj_pairs) / layer_thickness
+                    (DIFF_COEFF_SECOND_(i_adj_pairs) / layer_thickness_second)
                     * state[PHASE_ID_SECOND_(i_adj_pairs)]);
     
     if (DERIV_ID_(i_deriv) < 0) {
@@ -656,34 +682,28 @@ void rxn_condensed_phase_diffusion_print(int *rxn_int_data,
   double *float_data = rxn_float_data;
 
   printf("\n\nCondensed Phase Diffusion reaction\n");
-  printf("\nNumber of aerosol phases: %d", NUM_AERO_PHASE_);
+  //printf("\nNumber of aerosol phases: %d", NUM_AERO_PHASE_);
   printf("\n*** Aerosol phase data ***");
-  for (int i = 0; i < NUM_AERO_PHASE_; ++i) {
-    printf("\n  Aerosol species id: %d", AERO_SPEC_(i));
-    printf("\n  Aerosol phase id: %d", AERO_PHASE_ID_(i));
-    printf("\n  Aerosol representation id: %d", AERO_REP_ID_(i));
-    printf("\n  Aerosol species derivative id: %d", DERIV_ID_(i + 1));
-    printf("\n  dAero/dAero Jac id: %d", JAC_ID_(3 + i * 3));
-    printf("\n  Number of aerosol-phase species Jac elements: %d",
-           NUM_AERO_PHASE_JAC_ELEM_(i));
-    for (int j = 0; j < NUM_AERO_PHASE_JAC_ELEM_(i); ++j)
-      printf(" %d", PHASE_JAC_ID_(i, JAC_GAS, j));
-    printf("\n  dAero/dx ids:");
-    for (int j = 0; j < NUM_AERO_PHASE_JAC_ELEM_(i); ++j)
-      printf(" %d", PHASE_JAC_ID_(i, JAC_AERO, j));
-    printf("\n  Effective radius Jac elem:");
-    for (int j = 0; j < NUM_AERO_PHASE_JAC_ELEM_(i); ++j)
-      printf(" %le", EFF_RAD_JAC_ELEM_(i, j));
-    printf("\n  Number concentration Jac elem:");
-    for (int j = 0; j < NUM_AERO_PHASE_JAC_ELEM_(i); ++j)
-      printf(" %le", NUM_CONC_JAC_ELEM_(i, j));
-    printf("\n  Aerosol mass Jac elem:");
-    for (int j = 0; j < NUM_AERO_PHASE_JAC_ELEM_(i); ++j)
-      printf(" %le", MASS_JAC_ELEM_(i, j));
-    printf("\n  Average MW Jac elem:");
-    for (int j = 0; j < NUM_AERO_PHASE_JAC_ELEM_(i); ++j)
-      printf(" %le", MW_JAC_ELEM_(i, j));
-  }
+  //for (int i = 0; i < NUM_AERO_PHASE_; ++i) {
+  //  printf("\n  Aerosol species id: %d", AERO_SPEC_(i));
+  //  printf("\n  Aerosol phase id: %d", AERO_PHASE_ID_(i));
+  //  printf("\n  Aerosol representation id: %d", AERO_REP_ID_(i));
+  //  printf("\n  Aerosol species derivative id: %d", DERIV_ID_(i + 1));
+  //  printf("\n  dAero/dAero Jac id: %d", JAC_ID_(3 + i * 3));
+  //  printf("\n  Number of aerosol-phase species Jac elements: %d",
+  //         NUM_AERO_PHASE_JAC_ELEM_(i));
+  //  for (int j = 0; j < NUM_AERO_PHASE_JAC_ELEM_(i); ++j)
+  //    printf(" %d", PHASE_JAC_ID_(i, JAC_GAS, j));
+  //  printf("\n  dAero/dx ids:");
+  //  for (int j = 0; j < NUM_AERO_PHASE_JAC_ELEM_(i); ++j)
+  //    printf(" %d", PHASE_JAC_ID_(i, JAC_AERO, j));
+  //  printf("\n  Effective radius Jac elem:");
+  //  for (int j = 0; j < NUM_AERO_PHASE_JAC_ELEM_(i); ++j)
+  //    printf(" %le", EFF_RAD_JAC_ELEM_(i, j));
+  //  printf("\n  Number concentration Jac elem:");
+  //  for (int j = 0; j < NUM_AERO_PHASE_JAC_ELEM_(i); ++j)
+  //    printf(" %le", NUM_CONC_JAC_ELEM_(i, j));
+  //}
 
   return;
 }

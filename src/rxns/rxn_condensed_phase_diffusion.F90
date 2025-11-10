@@ -60,6 +60,7 @@ module camp_rxn_condensed_phase_diffusion
 #define NUM_AERO_PHASE_ this%condensed_data_int(1)
 #define NUM_AERO_SPECIES_ this%condensed_data_int(2)
 #define NUM_ADJACENT_PAIRS_ this%condensed_data_int(3)
+#define PARTICLE_STATE_SIZE_ this%condensed_data_int(4)
 
 #define NUM_INT_PROP_ 3
 #define NUM_REAL_PROP_ 0
@@ -256,6 +257,7 @@ contains
         end do
       end do
     end do
+    PARTICLE_STATE_SIZE_ = phase_id_array_size
 
     ! ID the phase and species names of diffusing 
     do i_species = 1, species%size()
@@ -336,31 +338,31 @@ contains
     this%num_env_params = NUM_ENV_PARAM_
 
     ! Set the number of aerosol-species instances
-    NUM_AERO_PHASE_ = n_aero_pairs
+    !NUM_AERO_PHASE_ = n_aero_pairs
 
     ! Set the ids of each aerosol-phase species instance
-    i_aero_id = 1
-    PHASE_INT_LOC_(i_aero_id)  = NUM_INT_PROP_+12*NUM_AERO_PHASE_+3
-    PHASE_REAL_LOC_(i_aero_id) = NUM_REAL_PROP_+1
-    do i_aero_rep = 1, size(aero_rep)
-      do i_adj_pairs = 1, NUM_ADJACENT_PAIRS_
+    !i_aero_id = 1
+    !PHASE_INT_LOC_(i_aero_id)  = NUM_INT_PROP_+12*NUM_AERO_PHASE_+3
+    !PHASE_REAL_LOC_(i_aero_id) = NUM_REAL_PROP_+1
+    !do i_aero_rep = 1, size(aero_rep)
+    !  do i_adj_pairs = 1, NUM_ADJACENT_PAIRS_
         ! Add the species concentration to the condensed data, and 
         ! set the number of Jacobian elements for the aerosol 
         ! representations and the locations of the real data
-        NUM_AERO_PHASE_JAC_ELEM_FIRST_(i_adj_pairs) = &
-              aero_rep(i_aero_rep)%val%num_jac_elem(PHASE_ID_FIRST_(i_adj_pairs))
-        NUM_AERO_PHASE_JAC_ELEM_SECOND_(i_adj_pairs) = &
-              aero_rep(i_aero_rep)%val%num_jac_elem(PHASE_ID_SECOND_(i_adj_pairs))
-        AERO_REP_ID_(i_adj_pairs) = i_aero_rep
-        i_aero_id = i_aero_id + 1
-        if (i_aero_id .le. NUM_AERO_PHASE_) then
-          PHASE_INT_LOC_(i_aero_id)  = PHASE_INT_LOC_(i_aero_id - 1) + 1 + &
-                                     2*NUM_AERO_PHASE_JAC_ELEM_FIRST_(i_aero_id - 1)
-          PHASE_REAL_LOC_(i_aero_id) = PHASE_REAL_LOC_(i_aero_id - 1) + &
-                                     4*NUM_AERO_PHASE_JAC_ELEM_FIRST_(i_aero_id - 1)
-        end if
-      end do
-    end do
+    !    NUM_AERO_PHASE_JAC_ELEM_FIRST_(i_adj_pairs) = &
+    !          aero_rep(i_aero_rep)%val%num_jac_elem(PHASE_ID_FIRST_(i_adj_pairs))
+    !    NUM_AERO_PHASE_JAC_ELEM_SECOND_(i_adj_pairs) = &
+    !          aero_rep(i_aero_rep)%val%num_jac_elem(PHASE_ID_SECOND_(i_adj_pairs))
+    !    AERO_REP_ID_(i_adj_pairs) = i_aero_rep
+    !    i_aero_id = i_aero_id + 1
+    !    if (i_aero_id .le. NUM_AERO_PHASE_) then
+    !      PHASE_INT_LOC_(i_aero_id)  = PHASE_INT_LOC_(i_aero_id - 1) + 1 + &
+    !                                 2*NUM_AERO_PHASE_JAC_ELEM_FIRST_(i_aero_id - 1)
+    !      PHASE_REAL_LOC_(i_aero_id) = PHASE_REAL_LOC_(i_aero_id - 1) + &
+    !                                 4*NUM_AERO_PHASE_JAC_ELEM_FIRST_(i_aero_id - 1)
+    !    end if
+    !  end do
+    !end do
 
     ! Check the sizes of the data arrays
     !tmp_size = PHASE_INT_LOC_(i_aero_id - 1) + 1 + &
