@@ -231,39 +231,23 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
 
   // Calculate derivative contributions for each aerosol phase
   for (int i_adj_pairs = 0, i_deriv = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; i_adj_pairs++) {
-    // Get the effective radius (m) of the outer layer
-    realtype radius_outer;
-    aero_rep_get_effective_radius__m(
-        model_data, // model data
+    // Get the layer thickness for first phase id (m)
+    realtype layer_thickness_first;
+    aero_rep_get_layer_thickness__m(
+        model_data, //model data 
         AERO_REP_ID_(i_adj_pairs), // aerosol representation index
         PHASE_ID_FIRST_(i_adj_pairs), // first phase id
-        &radius_outer, // outer layer effective radius (m)
-        NULL); // partial derivative 
-
-    // Get the effective radius (m) of the inner layer
-    realtype radius_interface;
-    aero_rep_get_effective_radius__m(
-        model_data, // model data
-        AERO_REP_ID_(i_adj_pairs), // aerosol representation index
-        PHASE_ID_SECOND_(i_adj_pairs), // first phase id
-        &radius_interface, // interface layer effective radius (m)
+        &layer_thickness_first, // layer thickness 
         NULL); // partial derivative
 
-    // Get the effective radius of the layer below the layers considered
-    realtype radius_inner;
-    for (int j = PHASE_ID_SECOND_(i_adj_pairs) + 1; j <= PARTICLE_STATE_SIZE_; j++) {
-      aero_rep_get_effective_radius__m(
-          model_data, // model data
-          AERO_REP_ID_(i_adj_pairs), // aerosol representation index
-          j, // first phase id
-          &radius_inner, // inner layer effective radius (m)
-          NULL); // partial derivative
-      if (radius_inner < radius_interface) {
-        break; 
-      } else if (radius_inner >= radius_interface) {
-        radius_inner = radius_interface;
-      }
-    }  
+    // Get the layer thickness for second phase id (m)
+    realtype layer_thickness_second;
+    aero_rep_get_layer_thickness__m(
+        model_data, //model data 
+        AERO_REP_ID_(i_adj_pairs), // aerosol representation index
+        PHASE_ID_SECOND_(i_adj_pairs), // second phase id
+        &layer_thickness_second, // layer thickness 
+        NULL); // partial derivative
 
     // Get the interface surface area (m2)
     realtype eff_sa;
@@ -297,15 +281,6 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
     // particle layers
     long double rate_first = eff_sa / volume_phase_first;
     long double rate_second = eff_sa / volume_phase_second;
-    
-    realtype layer_thickness_first = radius_outer - radius_interface;
-    realtype layer_thickness_second;
-    if (fabs(radius_inner - radius_interface) < 1e-12)
-      layer_thickness_second = radius_interface;
-    else if (radius_inner < radius_interface)
-      layer_thickness_second = radius_interface - radius_inner;
-    else
-      layer_thickness_second = 0.0;  // optional safety fallback 
 
     rate_first *= ((-DIFF_COEFF_FIRST_(i_adj_pairs) / layer_thickness_first) 
                     * state[PHASE_ID_FIRST_(i_adj_pairs)] +
