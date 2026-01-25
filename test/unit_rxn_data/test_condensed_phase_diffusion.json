@@ -73,11 +73,18 @@
                     "covers": "three layer"
             },
             {
-                    "name": "three layer",
+                    "name": "four layer",
                     "phases": [
                                "aqueous aerosol"
                     ],
                     "covers": "none"
+            },
+            {
+                    "name": "three layer",
+                    "phases": [
+                               "aqueous aerosol"
+                    ],
+                    "covers": "four layer"
             }
        ]
     },

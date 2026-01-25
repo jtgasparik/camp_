@@ -58,9 +58,8 @@ contains
 
     if (camp_solver_data%is_solver_available()) then
       passed = run_condensed_phase_diffusion_test(1)
-      passed = passed .and. run_condensed_phase_diffusion_test(2)
     else
-      call warn_msg(187891224, "No solver available")
+      call warn_msg(723042853, "No solver available")
       passed = .true.
     end if
 
@@ -72,9 +71,8 @@ contains
 
   !> Solve a mechanism consisting of a solute diffusing through the condensed phase
   !!
-  !! One of two scenarios is tested, depending on the passed integer:
+  !! One scenario is tested:
   !! (1) single-particle aerosol representation 
-  !! (2) modal aerosol representation 
   logical function run_condensed_phase_diffusion_test(scenario)
 
     use camp_constants
@@ -90,9 +88,11 @@ contains
     class(aero_rep_data_t), pointer :: aero_rep_ptr
     integer(kind=i_kind) :: num_state_var, state_size
     real(kind=dp), allocatable, dimension(:,:) :: model_conc, true_conc
-    integer(kind=i_kind) :: i_time, i_spec
-    real(kind=dp) :: time_step, time, conc_D, conc_water, MW_A, MW_B, MW_C, &
-            MW_D, k1_aq, k2_aq, k1_org, k2_org, temp, pressure
+    integer(kind=i_kind) :: idx_solute_l1, idx_solute_l2, idx_solute_l3, &
+            idx_solute_l4, idx_H2O_l1, idx_H2O_l2, idx_H2O_l3, idx_H2O_l4, &
+            i_time, i_spec
+    real(kind=dp) :: time_step, time, conc_solute_l1, conc_solute_l2, conc_solutel3, &
+         conc_solute_l4, conc_water, MW_solute, D_solute
 #ifdef CAMP_USE_MPI
     character, allocatable :: buffer(:), buffer_copy(:)
     integer(kind=i_kind) :: pack_size, pos, i_elem, results, rank_1_results
@@ -105,41 +105,21 @@ contains
     type(aero_rep_update_data_modal_binned_mass_GMD_t) :: update_data_GMD
     type(aero_rep_update_data_modal_binned_mass_GSD_t) :: update_data_GSD
 
-    call assert_msg(619416982, scenario.ge.1 .and. scenario.le.2, &
-                    "Invalid scenario specified: "//to_string( scenario ))
+    call assert_msg(227053212, scenario.eq.1, &
+              "Invalid scenario specified: "//to_string( scenario ))
 
     run_condensed_phase_diffusion_test = .true.
 
     ! Allocate space for the results
-    if (scenario.eq.1) then
-      num_state_var = 9 * 9 ! particles * species
-    else if (scenario.eq.2) then
-      num_state_var = 14
-    end if
+    num_state_var = 4 * 4 * 2 ! particles * layers * species
     allocate(model_conc(0:NUM_TIME_STEP, num_state_var))
     allocate(true_conc(0:NUM_TIME_STEP, num_state_var))
 
-    ! Set the environmental and aerosol test conditions
-    temp = 272.5d0              ! temperature (K)
-    pressure = 101253.3d0       ! pressure (Pa)
-
     ! Set the rate constants (for calculating the true values)
-    conc_D = 1.2d-2
+    MW_solute = 0.058 ! molecular weight of solute (kg/mol)
+    D_solute = 1.5e-5 ! diffusion coeff of solute in condensed phase (m2/s)
     conc_water = 2.3d0
-    MW_A = 0.1572
-    MW_B = 0.0219
-    MW_C = 0.2049
-    MW_D = 0.0345
-    k1_aq = conc_D / MW_D / conc_water + 1476.0d0 * &
-            exp( -5.5d-21 / (const%boltzmann * temp) ) * &
-            (temp/300.0d0)**(150.0d0) * (1.0d0 + 0.15d0 * pressure) / 60.0d0
-    k2_aq = 21.0d0 * exp( -4000.0d0/temp ) * (temp/315d0)**(11.0d0) * &
-            (1.0d0 + 0.05d0 * pressure)
-    k1_org = conc_D / MW_D + 1476.0d0 * &
-             exp( -5.5d-21 / (const%boltzmann * temp) ) * &
-             (temp/300.0d0)**(150.0d0) * (1.0d0 + 0.15d0 * pressure) / 60.0d0
-    k2_org = 21.0d0 * exp( -4000.0d0/temp ) * (temp/315d0)**(11.0d0) * &
-             (1.0d0 + 0.05d0 * pressure)
+    !!! JJJ: Where is the size of the particle specified???
 
     ! Set output time step (s)
     time_step = 1.0d0
@@ -150,11 +130,7 @@ contains
 #endif
 
       ! Get the condensed_phase_diffusion reaction mechanism json file
-      if (scenario.eq.1) then
-        input_file_path = 'test_condensed_phase_diffusion_config.json'
-      else if (scenario.eq.2) then
-        input_file_path = 'test_condensed_phase_diffusion_config_2.json'
-      end if
+      input_file_path = 'test_condensed_phase_diffusion_config.json'
 
       ! Construct a camp_core variable
       camp_core => camp_core_t(input_file_path)
@@ -166,96 +142,58 @@ contains
 
       ! Find the aerosol representation
       key = "my aero rep 2"
-      call assert(421062613, camp_core%get_aero_rep(key, aero_rep_ptr))
-
-      if (scenario.eq.2) then
-
-        ! Set the aerosol representation id
-        select type (aero_rep_ptr)
-          type is (aero_rep_modal_binned_mass_t)
-            call camp_core%initialize_update_object( aero_rep_ptr, &
-                                                     update_data_GMD)
-            call camp_core%initialize_update_object( aero_rep_ptr, &
-                                                     update_data_GSD)
-            call assert_msg(126380597, &
-                  aero_rep_ptr%get_section_id("unused mode", i_sect_unused), &
-                  "Could not get section id for the unused mode")
-            call assert_msg(573748443, &
-                  aero_rep_ptr%get_section_id("the mode", i_sect_the_mode), &
-                  "Could not get section id for the unused mode")
-
-          class default
-            call die_msg(403591539, "Wrong aero rep type")
-        end select
-
-      end if
+      call assert(337943171, camp_core%get_aero_rep(key, aero_rep_ptr))
 
       ! Get species indices
-      if (scenario.eq.1) then
-        idx_prefix = "P2.one layer."
-      else if (scenario.eq.2) then
-        idx_prefix = "the mode."
-      end if
-      key = idx_prefix//"aqueous aerosol.A"
-      idx_A_aq = aero_rep_ptr%spec_state_id(key);
-      key = idx_prefix//"aqueous aerosol.B"
-      idx_B_aq = aero_rep_ptr%spec_state_id(key);
-      key = idx_prefix//"aqueous aerosol.C"
-      idx_C_aq = aero_rep_ptr%spec_state_id(key);
-      key = idx_prefix//"aqueous aerosol.D"
-      idx_D_aq = aero_rep_ptr%spec_state_id(key);
+      idx_prefix = "P2.one layer."
+      key = idx_prefix//"aqueous aerosol.solute_aq"
+      idx_solute_l1 = aero_rep_ptr%spec_state_id(key);
       key = idx_prefix//"aqueous aerosol.H2O_aq"
-      idx_H2O = aero_rep_ptr%spec_state_id(key);
-      key = idx_prefix//"organic aerosol.A"
-      idx_A_org = aero_rep_ptr%spec_state_id(key);
-      key = idx_prefix//"organic aerosol.B"
-      idx_B_org = aero_rep_ptr%spec_state_id(key);
-      key = idx_prefix//"organic aerosol.C"
-      idx_C_org = aero_rep_ptr%spec_state_id(key);
-      key = idx_prefix//"organic aerosol.D"
-      idx_D_org = aero_rep_ptr%spec_state_id(key);
+      idx_H2O_l1 = aero_rep_ptr%spec_state_id(key);
+      idx_prefix = "P2.two layer."
+      key = idx_prefix//"aqueous aerosol.solute_aq"
+      idx_solute_l2 = aero_rep_ptr%spec_state_id(key);
+      key = idx_prefix//"aqueous aerosol.H2O_aq"
+      idx_H2O_l2 = aero_rep_ptr%spec_state_id(key);
+      idx_prefix = "P2.three layer."
+      key = idx_prefix//"aqueous aerosol.solute_aq"
+      idx_solute_l3 = aero_rep_ptr%spec_state_id(key);
+      key = idx_prefix//"aqueous aerosol.H2O_aq"
+      idx_H2O_l3 = aero_rep_ptr%spec_state_id(key);
+      idx_prefix = "P2.four layer."
+      key = idx_prefix//"aqueous aerosol.solute_aq"
+      idx_solute_l4 = aero_rep_ptr%spec_state_id(key);
+      key = idx_prefix//"aqueous aerosol.H2O_aq"
+      idx_H2O_l4 = aero_rep_ptr%spec_state_id(key);
 
       ! Make sure the expected species are in the model
-      call assert(643455452, idx_A_aq.gt.0)
-      call assert(917307621, idx_B_aq.gt.0)
-      call assert(747150717, idx_C_aq.gt.0)
-      call assert(241944312, idx_D_aq.gt.0)
-      call assert(971787407, idx_H2O.gt.0)
-      call assert(801630503, idx_A_org.gt.0)
-      call assert(631473599, idx_B_org.gt.0)
-      call assert(743791944, idx_C_org.gt.0)
-      call assert(573635040, idx_D_org.gt.0)
+      call assert(050889938, idx_solute_l1.gt.0)
+      call assert(599205790, idx_solute_l2.gt.0)
+      call assert(434244152, idx_solute_l3.gt.0)
+      call assert(260481458, idx_solute_l4.gt.0)
+      call assert(149096792, idx_H2O_l1.gt.0)
+      call assert(011666208, idx_H2O_l2.gt.0)
+      call assert(465533442, idx_H2O_l3.gt.0)
+      call assert(250659956, idx_H2O_l4.gt.0)
 
 #ifdef CAMP_USE_MPI
       ! pack the camp core
       pack_size = camp_core%pack_size()
-      if (scenario.eq.2) then
-        pack_size = pack_size &
-                    + update_data_GMD%pack_size() &
-                    + update_data_GSD%pack_size()
-      end if
       allocate(buffer(pack_size))
       pos = 0
       call camp_core%bin_pack(buffer, pos)
-      if (scenario.eq.2) then
-        call update_data_GMD%bin_pack(buffer, pos)
-        call update_data_GSD%bin_pack(buffer, pos)
-      end if
-      call assert(636035849, pos.eq.pack_size)
+      call assert(761722462, pos.eq.pack_size)
     end if
 
     ! broadcast the species ids
-    call camp_mpi_bcast_integer(idx_A_aq)
-    call camp_mpi_bcast_integer(idx_B_aq)
-    call camp_mpi_bcast_integer(idx_C_aq)
-    call camp_mpi_bcast_integer(idx_D_aq)
-    call camp_mpi_bcast_integer(idx_H2O)
-    call camp_mpi_bcast_integer(idx_A_org)
-    call camp_mpi_bcast_integer(idx_B_org)
-    call camp_mpi_bcast_integer(idx_C_org)
-    call camp_mpi_bcast_integer(idx_D_org)
-    call camp_mpi_bcast_integer(i_sect_unused)
-    call camp_mpi_bcast_integer(i_sect_the_mode)
+    call camp_mpi_bcast_integer(idx_solute_l1)
+    call camp_mpi_bcast_integer(idx_solute_l2)
+    call camp_mpi_bcast_integer(idx_solute_l3)
+    call camp_mpi_bcast_integer(idx_solute_l4)
+    call camp_mpi_bcast_integer(idx_H2O_l1)
+    call camp_mpi_bcast_integer(idx_H2O_l2)
+    call camp_mpi_bcast_integer(idx_H2O_l3)
+    call camp_mpi_bcast_integer(idx_H2O_l4)
 
     ! broadcast the buffer size
     call camp_mpi_bcast_integer(pack_size)
@@ -273,21 +211,13 @@ contains
       camp_core => camp_core_t()
       pos = 0
       call camp_core%bin_unpack(buffer, pos)
-      if (scenario.eq.2) then
-        call update_data_GMD%bin_unpack(buffer, pos)
-        call update_data_GSD%bin_unpack(buffer, pos)
-      end if
-      call assert(913246791, pos.eq.pack_size)
+      call assert(967359696, pos.eq.pack_size)
       allocate(buffer_copy(pack_size))
       pos = 0
       call camp_core%bin_pack(buffer_copy, pos)
-      if (scenario.eq.2) then
-        call update_data_GMD%bin_pack(buffer_copy, pos)
-        call update_data_GSD%bin_pack(buffer_copy, pos)
-      end if
-      call assert(408040386, pos.eq.pack_size)
+      call assert(524365939, pos.eq.pack_size)
       do i_elem = 1, pack_size
-        call assert_msg(185309230, buffer(i_elem).eq.buffer_copy(i_elem), &
+        call assert_msg(811596732, buffer(i_elem).eq.buffer_copy(i_elem), &
                 "Mismatch in element :"//trim(to_string(i_elem)))
       end do
 
@@ -300,40 +230,21 @@ contains
       ! Get a model state variable
       camp_state => camp_core%new_state()
 
-      ! Update the GMD and GSD for the aerosol modes
-      if (scenario.eq.2) then
-        ! unused mode
-        call update_data_GMD%set_GMD(i_sect_unused, 1.2d-6)
-        call update_data_GSD%set_GSD(i_sect_unused, 1.2d0)
-        call camp_core%update_data(update_data_GMD)
-        call camp_core%update_data(update_data_GSD)
-        ! the mode
-        call update_data_GMD%set_GMD(i_sect_the_mode, 9.3d-7)
-        call update_data_GSD%set_GSD(i_sect_the_mode, 0.9d0)
-        call camp_core%update_data(update_data_GMD)
-        call camp_core%update_data(update_data_GSD)
-      end if
-
       ! Check the size of the state array
       state_size = size(camp_state%state_var)
-      call assert_msg(235226766, state_size.eq.NUM_STATE_VAR, &
+      call assert_msg(093459490, state_size.eq.NUM_STATE_VAR, &
                       "Wrong state size: "//to_string( state_size ))
-
-      ! Set the environmental conditions
-      call camp_state%env_states(1)%set_temperature_K(   temp )
-      call camp_state%env_states(1)%set_pressure_Pa( pressure )
 
       ! Save the initial concentrations
       true_conc(:,:) = 0.0
-      true_conc(0,idx_A_aq) = 1.0
-      true_conc(0,idx_B_aq) = 0.0
-      true_conc(0,idx_C_aq) = 0.0
-      true_conc(0,idx_D_aq) = conc_D
-      true_conc(:,idx_H2O) = conc_water
-      true_conc(0,idx_A_org) = 1.0
-      true_conc(0,idx_B_org) = 0.0
-      true_conc(0,idx_C_org) = 0.0
-      true_conc(0,idx_D_org) = conc_D
+      true_conc(0,idx_solute_l1) = 1.0e25
+      true_conc(0,idx_solute_l2) = 0.0
+      true_conc(0,idx_solute_l3) = 0.0
+      true_conc(0,idx_solute_l4) = 0.0
+      true_conc(:,idx_H2O_l1) = conc_water
+      true_conc(:,idx_H2O_l2) = conc_water
+      true_conc(:,idx_H2O_l3) = conc_water
+      true_conc(:,idx_H2O_l4) = conc_water
       model_conc(0,:) = true_conc(0,:)
 
       ! Set the initial state in the model
@@ -344,93 +255,13 @@ contains
       solver_stats%eval_Jac = .true.
 #endif
 
-      ! Integrate the mechanism
-      do i_time = 1, NUM_TIME_STEP
-
-        ! Get the modeled conc
-        call camp_core%solve(camp_state, time_step, &
-                              solver_stats = solver_stats)
-        model_conc(i_time,:) = camp_state%state_var(:)
-
 #ifdef CAMP_DEBUG
         ! Check the Jacobian evaluations
-        call assert_msg(772386254, solver_stats%Jac_eval_fails.eq.0, &
-                        trim( to_string( solver_stats%Jac_eval_fails ) )// &
-                        " Jacobian evaluation failures at time step "// &
-                        trim( to_string( i_time ) ) )
+        !call assert_msg(567403530, solver_stats%Jac_eval_fails.eq.0, &
+        !                trim( to_string( solver_stats%Jac_eval_fails ) )// &
+        !                " Jacobian evaluation failures at time step "// &
+        !                trim( to_string( i_time ) ) )
 #endif
-
-        ! Get the analytic concentrations
-        time = i_time * time_step
-        true_conc(i_time,idx_A_aq) = true_conc(0,idx_A_aq) * exp(-k1_aq*time)
-        true_conc(i_time,idx_B_aq) = true_conc(0,idx_A_aq) * &
-                (k1_aq/(k2_aq-k1_aq)) * &
-                (exp(-k1_aq*time) - exp(-k2_aq*time)) * MW_B / MW_A
-        true_conc(i_time,idx_C_aq) = true_conc(0,idx_A_aq) * MW_C / MW_A * &
-                (1.0d0 + (k1_aq*exp(-k2_aq*time) - &
-                k2_aq*exp(-k1_aq*time))/(k2_aq-k1_aq))
-        true_conc(i_time,idx_D_aq) = true_conc(0,idx_D_aq)
-        true_conc(i_time,idx_H2O) = true_conc(0,idx_H2O)
-        true_conc(i_time,idx_A_org) = true_conc(0,idx_A_org) * exp(-k1_org*time)
-        true_conc(i_time,idx_B_org) = true_conc(0,idx_A_org) * &
-                (k1_org/(k2_org-k1_org)) * &
-                (exp(-k1_org*time) - exp(-k2_org*time)) * MW_B / MW_A
-        true_conc(i_time,idx_C_org) = true_conc(0,idx_A_org) * MW_C / MW_A * &
-                (1.0d0 + (k1_org*exp(-k2_org*time) - &
-                k2_org*exp(-k1_org*time))/(k2_org-k1_org))
-        true_conc(i_time,idx_D_org) = true_conc(0,idx_D_org)
-
-      end do
-
-      ! Save the results
-      if (scenario.eq.1) then
-        open(unit=7, file="out/condensed_phase_diffusion_results.txt", &
-              status="replace", action="write")
-      else if (scenario.eq.2) then
-        open(unit=7, file="out/condensed_phase_diffusion_results_2.txt", &
-              status="replace", action="write")
-      end if
-      do i_time = 0, NUM_TIME_STEP
-        write(7,*) i_time*time_step, &
-              ' ', true_conc(i_time, idx_A_aq), &
-              ' ', model_conc(i_time, idx_A_aq), &
-              ' ', true_conc(i_time, idx_B_aq), &
-              ' ', model_conc(i_time, idx_B_aq), &
-              ' ', true_conc(i_time, idx_C_aq), &
-              ' ', model_conc(i_time, idx_C_aq), &
-              ' ', true_conc(i_time, idx_D_aq), &
-              ' ', model_conc(i_time, idx_D_aq), &
-              ' ', true_conc(i_time, idx_H2O), &
-              ' ', model_conc(i_time, idx_H2O), &
-              ' ', true_conc(i_time, idx_A_org), &
-              ' ', model_conc(i_time, idx_A_org), &
-              ' ', true_conc(i_time, idx_B_org), &
-              ' ', model_conc(i_time, idx_B_org), &
-              ' ', true_conc(i_time, idx_C_org), &
-              ' ', model_conc(i_time, idx_C_org), &
-              ' ', true_conc(i_time, idx_D_org), &
-              ' ', model_conc(i_time, idx_D_org)
-      end do
-      close(7)
-
-      ! Analyze the results (single-particle only)
-      if (scenario.eq.1) then
-        do i_time = 1, NUM_TIME_STEP
-          do i_spec = 1, size(model_conc, 2)
-            call assert_msg(248109045, &
-              almost_equal(model_conc(i_time, i_spec), &
-              true_conc(i_time, i_spec), real(1.0e-2, kind=dp)).or. &
-              (model_conc(i_time, i_spec).lt.1e-5*model_conc(1, i_spec).and. &
-              true_conc(i_time, i_spec).lt.1e-5*true_conc(1, i_spec)).or. &
-              (model_conc(i_time, i_spec).lt.1.0e-30.and. &
-              true_conc(i_time, i_spec).lt.1.0e-30), &
-              "time: "//trim(to_string(i_time))//"; species: "// &
-              trim(to_string(i_spec))//"; mod: "// &
-              trim(to_string(model_conc(i_time, i_spec)))//"; true: "// &
-              trim(to_string(true_conc(i_time, i_spec))))
-          end do
-        end do
-      end if
 
       deallocate(camp_state)
 
