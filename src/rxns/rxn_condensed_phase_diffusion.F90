@@ -19,7 +19,7 @@
 !!    "type" : "MECHANISM",
 !!    "reactions" : [
 !!      {
-!!        "type" : "DIFFUSION_LAYERS",
+!!        "type" : "CONDENSED_PHASE_DIFFUSION",
 !!        "species": [{
 !!          "phase": "aqueous",
 !!          "name": "H2O_aq"
@@ -180,24 +180,29 @@ contains
     
     call species%iter_reset()
     do i_species = 1, species%size()
+      print * , "Processing species ", species%size()
 
       ! Get the species properties
       call assert_msg(815257799, species%get_property_t(val=species), &
               "Invalid structure for species '"// &
-              diffusion_species_names(i_species)// &
+              to_string(i_species)// &
               "' in condensed phase diffusion reaction.")
 
       ! Get the phase names
       key_name = "phase"
       call assert_msg(354574496, species%get_string(key_name, phase_name), &
-              "Missing phase name in condensed phase diffusion reaction.")
+              "Missing phase name in condensed phase diffusion reaction for species "// &
+              to_string(i_species))
       diffusion_phase_names(i_species) = phase_name
+      print * , "  Phase name: ", phase_name
 
       ! Get the associated species names
       key_name = "name"
       call assert_msg(629919883, species%get_string(key_name, species_name), &
-              "Missing species name in condensed phase reaction.")
+              "Missing species name in condensed phase reaction for species "// &
+              to_string(i_species))
       diffusion_species_names(i_species) = species_name
+      print * , "  Species name: ", species_name
 
       call species%iter_next()
     end do

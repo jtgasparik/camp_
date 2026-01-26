@@ -48,11 +48,11 @@
 !!   - \subpage camp_rxn_SIMPOL_phase_transfer "SIMPOL.1 phase transfer"
 !!   - \subpage camp_rxn_ternary_chemical_activation "ternary chemical activation"
 !!   - \subpage camp_rxn_surface "surface (heterogeneous)"
+!!   - \subpage camp_rxn_condensed_phase_diffusion "condensed-phase diffusion"
 !!   - \subpage camp_rxn_troe "Troe (fall-off)"
 !!   - \subpage camp_rxn_wennberg_no_ro2 "Wennberg NO + RO2"
 !!   - \subpage camp_rxn_wennberg_tunneling "Wennberg tunneling"
 !!   - \subpage camp_rxn_wet_deposition "wet deposition"
-!!   - \subpage camp_rxn_condensed_phase_diffusion "condensed-phase diffusion"
 !!
 !! The general input format for a reaction can be found
 !! \subpage input_format_rxn "here".

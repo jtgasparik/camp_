@@ -194,12 +194,12 @@ module camp_rxn_factory
   use camp_rxn_photolysis
   use camp_rxn_SIMPOL_phase_transfer
   use camp_rxn_surface
+  use camp_rxn_condensed_phase_diffusion
   use camp_rxn_ternary_chemical_activation
   use camp_rxn_troe
   use camp_rxn_wennberg_no_ro2
   use camp_rxn_wennberg_tunneling
   use camp_rxn_wet_deposition
-  use camp_rxn_condensed_phase_diffusion
 
   use iso_c_binding
 
