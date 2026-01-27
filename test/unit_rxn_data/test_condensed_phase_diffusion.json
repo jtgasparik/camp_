@@ -117,12 +117,8 @@
       {
         "type" : "CONDENSED_PHASE_DIFFUSION",
         "species": [{
-          "phase": "aqueous",
-          "name": "H2O_aq"
-      },
-      {
-        "phase": "organic",
-        "name": "H2O_org"
+          "phase": "aqueous aerosol",
+          "name": "solute_aq"
       }]
       }]
     }
