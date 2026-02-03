@@ -247,38 +247,41 @@ contains
 
     ! Extend PHASE_ID_FIRST_ and PHASE_ID_SECOND_ to all aerosol particles
     !n_aero_pairs = 0
-    do i_aero_rep = 1, size(aero_rep)
+    !do i_aero_rep = 1, size(aero_rep)
       !unique_spec_names = aero_rep(i_aero_rep)%val%unique_names( &
       !        phase_name = diffusion_phase_names(1), &
       !        spec_name = diffusion_species_names(1))
       !phase_id_max = aero_rep(i_aero_rep)%val%spec_state_id(unique_spec_names( &
       !        size(unique_spec_names)%string))
-      phase_id_array_size = aero_rep(i_aero_rep)%val%size()
-      state_size = size(camp_state%state_var)
-      max_particles = ceiling(real(phase_id_array_size) / real(state_size))
-      NUM_ADJACENT_PAIRS_ = num_adjacent_pairs * max_particles
-      do i_particle = 1, max_particles
-        offset = (i_particle -1) * state_size
-        do i = 1, num_adjacent_pairs
-          PHASE_ID_FIRST_((i_particle -1) * num_adjacent_pairs + i) = &
-              phase_id_first(i) + offset
-          PHASE_ID_SECOND_((i_particle -1) * num_adjacent_pairs + i) = &
-              phase_id_second(i) + offset
+      !phase_id_array_size = aero_rep(i_aero_rep)%val%size()
+      !state_size = size(camp_state%state_var)
+      !max_particles = ceiling(real(phase_id_array_size) / real(state_size))
+      !NUM_ADJACENT_PAIRS_ = num_adjacent_pairs * max_particles
+      !do i_particle = 1, max_particles
+      !  offset = (i_particle -1) * state_size
+      !  do i = 1, num_adjacent_pairs
+      !    PHASE_ID_FIRST_((i_particle -1) * num_adjacent_pairs + i) = &
+      !        phase_id_first(i) + offset
+      !    PHASE_ID_SECOND_((i_particle -1) * num_adjacent_pairs + i) = &
+      !        phase_id_second(i) + offset
           !n_aero_pairs = n_aero_pairs + 1
-        end do
-      end do
-    end do
-    PARTICLE_STATE_SIZE_ = phase_id_array_size
+      !  end do
+      !end do
+    !end do
+
+    ! ***Not sure if I need this***
+    !PARTICLE_STATE_SIZE_ = phase_id_array_size
 
     ! ID the phase and species names of diffusing 
-    do i_species = 1, species%size()
+    ! ***this needs to be fixed***
+    do i_phase = 1, size(aero_phase)
       do i_adj_pairs = 1, NUM_ADJACENT_PAIRS_
         if (phase_id_first(i_species) .eq. PHASE_ID_FIRST_(i_adj_pairs)) then
-          phase_names_first(i_adj_pairs) = diffusion_phase_names(i_species)%string
-          spec_names_first(i_adj_pairs) = diffusion_species_names(i_species)%string
+          phase_names_first(i_adj_pairs) = diffusion_phase_names(i_phase)%string
+          spec_names_first(i_adj_pairs) = diffusion_species_names(i_phase)%string
         else if (phase_id_second(i_species) .eq. PHASE_ID_SECOND_(i_adj_pairs)) then
-          phase_names_second(i_adj_pairs) = diffusion_phase_names(i_species)%string
-          spec_names_second(i_adj_pairs) = diffusion_species_names(i_species)%string
+          phase_names_second(i_adj_pairs) = diffusion_phase_names(i_phase)%string
+          spec_names_second(i_adj_pairs) = diffusion_species_names(i_phase)%string
         end if
       end do
     end do
