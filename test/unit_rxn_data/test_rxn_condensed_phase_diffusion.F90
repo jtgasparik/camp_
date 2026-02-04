@@ -111,7 +111,7 @@ contains
     run_condensed_phase_diffusion_test = .true.
 
     ! Allocate space for the results
-    num_state_var = 4 * 4 * 2 ! particles * layers * species
+    num_state_var = 52 ! particles * layers * species ** this needs to be looked at**
     allocate(model_conc(0:NUM_TIME_STEP, num_state_var))
     allocate(true_conc(0:NUM_TIME_STEP, num_state_var))
 

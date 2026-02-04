@@ -30,25 +30,25 @@
 #define NUM_ADJACENT_PAIRS_ int_data[2]
 #define PARTICLE_STATE_SIZE_ int_data[3]
 
-#define NUM_INT_PROP_ 3
+#define NUM_INT_PROP_ 4
 #define NUM_FLOAT_PROP_ 0
 #define NUM_ENV_PARAM_ 4
 #define BLOCK_SIZE 1000
 
-#define DIFF_COEFF_FIRST_(x) (int_data[0*BLOCK_SIZE + x]-1)
-#define DIFF_COEFF_SECOND_(x) (int_data[1*BLOCK_SIZE + x]-1)
-#define PHASE_ID_FIRST_(x) (int_data[2*BLOCK_SIZE + x]-1)
-#define PHASE_ID_SECOND_(x) (int_data[3*BLOCK_SIZE + x]-1)
-#define AERO_REP_ID_(x) (int_data[4*BLOCK_SIZE + x]-1)
-#define DERIV_ID_(x) (int_data[5*BLOCK_SIZE + x])
-#define JAC_ID_(x) (int_data[6*BLOCK_SIZE + x]-1)
-#define PHASE_INT_LOC_(x) (int_data[7*BLOCK_SIZE + x]-1)
-#define PHASE_FLOAT_LOC_(x) (int_data[8*BLOCK_SIZE + x]-1)
-#define NUM_AERO_PHASE_JAC_ELEM_FIRST_(x) (int_data[9*BLOCK_SIZE + x]-1)
-#define NUM_AERO_PHASE_JAC_ELEM_SECOND_(x) (int_data[10*BLOCK_SIZE + x]-1)
-#define PHASE_JAC_ID_(x) (int_data[11*BLOCK_SIZE + x]-1)
-#define NUM_CONC_JAC_ELEM_(x) (int_data[12*BLOCK_SIZE + x]-1)
-#define MASS_JAC_ELEM_(x) (int_data[13*BLOCK_SIZE + x]-1)
+#define DIFF_COEFF_FIRST_(x) (int_data[1*BLOCK_SIZE + x]-1)
+#define DIFF_COEFF_SECOND_(x) (int_data[2*BLOCK_SIZE + x]-1)
+#define PHASE_ID_FIRST_(x) (int_data[3*BLOCK_SIZE + x]-1)
+#define PHASE_ID_SECOND_(x) (int_data[4*BLOCK_SIZE + x]-1)
+#define AERO_REP_ID_(x) (int_data[5*BLOCK_SIZE + x]-1)
+#define DERIV_ID_(x) (int_data[6*BLOCK_SIZE + x])
+#define JAC_ID_(x) (int_data[7*BLOCK_SIZE + x]-1)
+#define PHASE_INT_LOC_(x) (int_data[8*BLOCK_SIZE + x]-1)
+#define PHASE_FLOAT_LOC_(x) (int_data[9*BLOCK_SIZE + x]-1)
+#define NUM_AERO_PHASE_JAC_ELEM_FIRST_(x) (int_data[10*BLOCK_SIZE + x]-1)
+#define NUM_AERO_PHASE_JAC_ELEM_SECOND_(x) (int_data[11*BLOCK_SIZE + x]-1)
+#define PHASE_JAC_ID_(x) (int_data[12*BLOCK_SIZE + x]-1)
+#define NUM_CONC_JAC_ELEM_(x) (int_data[13*BLOCK_SIZE + x]-1)
+#define MASS_JAC_ELEM_(x) (int_data[14*BLOCK_SIZE + x]-1)
 
 /** \brief Flag Jacobian elements used by this reaction
  *
