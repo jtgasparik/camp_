@@ -134,7 +134,7 @@ contains
     !> Number of grid cells to solve simultaneously
     integer(kind=i_kind), intent(in) :: n_cells
 
-    !character(len=:), allocatable :: phase_names_first(:), spec_names_first(:)
+    character(len=:), allocatable :: phase_names_first(:), spec_names_first(:)
     character(len=:), allocatable :: phase_names_second(:), spec_names_second(:)
     type(aero_phase_data_t), pointer :: aero_phase_data
 
@@ -245,8 +245,8 @@ contains
     allocate(phase_id_first(num_adjacent_pairs))
     allocate(phase_id_second(num_adjacent_pairs)) 
     do i = 1, num_adjacent_pairs
-      PHASE_ID_FIRST_(i) = adjacent_phases(i)%first_
-      PHASE_ID_SECOND_(i) = adjacent_phases(i)%second_
+      phase_id_first(i) = adjacent_phases(i)%first_
+      phase_id_second(i) = adjacent_phases(i)%second_
     end do
 
     !do i_aero_rep = 1, size(aero_rep) 
