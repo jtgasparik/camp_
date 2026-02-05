@@ -234,73 +234,50 @@ contains
     do i_aero_rep = 1, size(aero_rep) 
       adjacent_phases = aero_rep(i_aero_rep)%val%adjacent_phases(diffusion_phase_names(1)%string, &
          diffusion_phase_names(SIZE(diffusion_phase_names))%string)
+      print * , "number of adjacent phases found: ", size(adjacent_phases)
       if (size(adjacent_phases) .gt. 0) then
         do i = 1, size(adjacent_phases)
           num_adjacent_pairs = num_adjacent_pairs + 1
           PHASE_ID_FIRST_(num_adjacent_pairs) = adjacent_phases(i)%first_
           PHASE_ID_SECOND_(num_adjacent_pairs) = adjacent_phases(i)%second_
-          AERO_REP_ID_(num_adjacent_pairs) = i_aero_rep
         end do
       end if
     end do
     
     call assert_msg(051987857, num_adjacent_pairs .gt. 0, &
        "No adjacent phases found condensed phase diffusion reaction.")
-    print * , "Adjacent phase pairs found: ", num_adjacent_pairs
-    print * , "Phase ID First:"
-    do i = 1, num_adjacent_pairs
-      print * , "  ", PHASE_ID_FIRST_(i)
-    end do
-    print * , "Phase ID Second:"
-    do i = 1, num_adjacent_pairs
-      print * , "  ", PHASE_ID_SECOND_(i)
-    end do
 
     ! Create the arrays of diffusion coefficients for each adjacent phase pair
     do i_aero_rep = 1, size(aero_rep) 
       do i_phase = 1, size(aero_phase)
-        phase_ids = aero_rep(i_aero_rep)%val%phase_ids(aero_phase(i_phase)%val%name(), &
-            is_at_surface=.false.)
-        do i_phase_ids = 1, size(phase_ids)
-          do i_adj_pairs = 1, num_adjacent_pairs
-            ! Only check adjacent pairs belonging to this aerosol representation
-            if (AERO_REP_ID_(i_adj_pairs) .ne. i_aero_rep) cycle
-            if (phase_ids(i_phase_ids) .eq. PHASE_ID_FIRST_(i_adj_pairs)) then
-              print * , "Loading diffusion coefficient for phase: ", &
-                      diffusion_phase_names(1)%string
-              print * , "  Phase ID: ", phase_ids(i_phase_ids)
-              print * , "  Phase ID first: ", PHASE_ID_FIRST_(i_adj_pairs)
-              ! Load phase dataset
-              aero_phase_property_set => aero_phase(i_phase)%val%get_property_set()
-              call assert_msg(599726684, associated(aero_phase_property_set), &
-                    "Missing species properties"//error_msg)
-              spec_property_set => aero_phase(i_phase)%val%get_spec_property_set( &
-                      diffusion_species_names(1)%string)
-              ! Get the species specific diffusion coefficient
-              key_name = "diffusion coefficient [m2 s-1]"
-              call assert_msg(529056909, spec_property_set%get_real(key_name, temp_real), & 
-                    "Missing property 'diffusion coefficient [m2 s-1]' " //&
-                    " for '" //diffusion_species_names(1)%string)
+        do i_adj_pairs = 1, num_adjacent_pairs
+          ! Find the FIRST phase in the pair
+          if (aero_phase(i_phase)%val%name() .eq. diffusion_phase_names(1)%string) then
+            spec_property_set => aero_phase(i_phase)%val%get_spec_property_set( &
+                    diffusion_species_names(1)%string)
+            key_name = "diffusion coefficient [m2 s-1]"
+            if (spec_property_set%get_real(key_name, temp_real)) then
               DIFF_COEFF_FIRST_(i_adj_pairs) = temp_real
-            else if (phase_ids(i_phase_ids) .eq. PHASE_ID_SECOND_(i_adj_pairs)) then
-              print * , "Loading diffusion coefficient for phase: ", &
-                      diffusion_phase_names(SIZE(diffusion_phase_names))%string
-              print * , "  Phase ID: ", phase_ids(i_phase_ids)
-              print * , "  Phase ID second: ", PHASE_ID_SECOND_(i_adj_pairs)
-              ! Load phase dataset
-              aero_phase_property_set => aero_phase(i_phase)%val%get_property_set()
-              call assert_msg(575876873, associated(aero_phase_property_set), &
-                    "Missing species properties"//error_msg)
-              spec_property_set => aero_phase(i_phase)%val%get_spec_property_set( &
-                      diffusion_species_names(SIZE(diffusion_species_names))%string)
-              ! Get the species specific diffusion coefficient
-              key_name = "diffusion coefficient [m2 s-1]"
-              call assert_msg(276040799, spec_property_set%get_real(key_name, temp_real), &
-                    "Missing property 'diffusion coefficient [m2 s-1]' " //&
-                    " for '" //diffusion_species_names(SIZE(diffusion_species_names))%string)
-              DIFF_COEFF_SECOND_(i_adj_pairs) = temp_real
             end if
-          end do
+          end if
+        end do
+      end do
+      
+      ! Find the SECOND phase in the pair
+      do i_phase = 1, size(aero_phase)
+        do i_adj_pairs = 1, num_adjacent_pairs
+         ! Find the SECOND phase in the pair
+          if (aero_phase(i_phase)%val%name() .eq. diffusion_phase_names(SIZE(diffusion_phase_names))%string) then
+            spec_property_set => aero_phase(i_phase)%val%get_spec_property_set( &
+                    diffusion_species_names(SIZE(diffusion_species_names))%string)
+            key_name = "diffusion coefficient [m2 s-1]"
+            if (spec_property_set%get_real(key_name, temp_real)) then
+             DIFF_COEFF_SECOND_(i_adj_pairs) = temp_real
+              print *, "Set DIFF_COEFF_SECOND for pair ", i_adj_pairs, " = ", temp_real
+            else
+              print *, "WARNING: Could not find diffusion coefficient for pair ", i_adj_pairs
+            end if
+          end if
         end do
       end do
     end do
