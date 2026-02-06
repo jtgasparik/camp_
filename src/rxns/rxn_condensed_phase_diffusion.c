@@ -21,34 +21,28 @@
 //#define TEMPERATURE_K_ env_data[0]
 //#define PRESSURE_PA_ env_data[1]
 
-// Aerosol mass concentration types
-#define PER_PARTICLE_MASS 0
-#define TOTAL_PARTICLE_MASS 1
+#define NUM_ADJACENT_PAIRS_ int_data[0]
 
-#define NUM_AERO_PHASE_ int_data[0]
-#define NUM_AERO_SPECIES_ int_data[1]
-#define NUM_ADJACENT_PAIRS_ int_data[2]
-#define PARTICLE_STATE_SIZE_ int_data[3]
-
-#define NUM_INT_PROP_ 4
+#define NUM_INT_PROP_ 1
 #define NUM_FLOAT_PROP_ 0
-#define NUM_ENV_PARAM_ 4
-#define BLOCK_SIZE 1000
+#define NUM_ENV_PARAM_ 0
+#define BLOCK_SIZE_ 1000
 
-#define DIFF_COEFF_FIRST_(x) (int_data[1*BLOCK_SIZE + x]-1)
-#define DIFF_COEFF_SECOND_(x) (int_data[2*BLOCK_SIZE + x]-1)
-#define PHASE_ID_FIRST_(x) (int_data[3*BLOCK_SIZE + x]-1)
-#define PHASE_ID_SECOND_(x) (int_data[4*BLOCK_SIZE + x]-1)
-#define AERO_REP_ID_(x) (int_data[5*BLOCK_SIZE + x]-1)
-#define DERIV_ID_(x) (int_data[6*BLOCK_SIZE + x])
-#define JAC_ID_(x) (int_data[7*BLOCK_SIZE + x]-1)
-#define PHASE_INT_LOC_(x) (int_data[8*BLOCK_SIZE + x]-1)
-#define PHASE_FLOAT_LOC_(x) (int_data[9*BLOCK_SIZE + x]-1)
-#define NUM_AERO_PHASE_JAC_ELEM_FIRST_(x) (int_data[10*BLOCK_SIZE + x]-1)
-#define NUM_AERO_PHASE_JAC_ELEM_SECOND_(x) (int_data[11*BLOCK_SIZE + x]-1)
-#define PHASE_JAC_ID_(x) (int_data[12*BLOCK_SIZE + x]-1)
-#define NUM_CONC_JAC_ELEM_(x) (int_data[13*BLOCK_SIZE + x]-1)
-#define MASS_JAC_ELEM_(x) (int_data[14*BLOCK_SIZE + x]-1)
+#define DIFF_COEFF_FIRST_(x) (float_data[NUM_ADJACENT_PAIRS_ + x]-1)
+#define DIFF_COEFF_SECOND_(x) (float_data[2*NUM_ADJACENT_PAIRS_ + x]-1)
+#define PHASE_ID_FIRST_(x) (int_data[NUM_ADJACENT_PAIRS_ + x]-1)
+#define PHASE_ID_SECOND_(x) (int_data[2*NUM_ADJACENT_PAIRS_ + x]-1)
+
+#define DERIV_ID_(x) (int_data[3*BLOCK_SIZE_ + x])
+#define AERO_REP_ID_(x) (int_data[4*BLOCK_SIZE_ + x]-1)
+//#define JAC_ID_(x) (int_data[4*BLOCK_SIZE_ + x]-1)
+//#define PHASE_INT_LOC_(x) (int_data[5*BLOCK_SIZE_ + x]-1)
+//#define PHASE_FLOAT_LOC_(x) (int_data[9*BLOCK_SIZE_ + x]-1)
+//#define NUM_AERO_PHASE_JAC_ELEM_FIRST_(x) (int_data[10*BLOCK_SIZE + x]-1)
+//#define NUM_AERO_PHASE_JAC_ELEM_SECOND_(x) (int_data[11*BLOCK_SIZE + x]-1)
+//#define PHASE_JAC_ID_(x) (int_data[12*BLOCK_SIZE + x]-1)
+//#define NUM_CONC_JAC_ELEM_(x) (int_data[13*BLOCK_SIZE + x]-1)
+//#define MASS_JAC_ELEM_(x) (int_data[14*BLOCK_SIZE + x]-1)
 
 /** \brief Flag Jacobian elements used by this reaction
  *
@@ -146,10 +140,10 @@ void rxn_condensed_phase_diffusion_update_ids(ModelData *model_data, int *deriv_
   double *float_data = rxn_float_data;
 
   // Update the time derivative ids for adjacent condensed phase pairs
-  for (int i_adj_pair = 0, i_deriv = 0; i_adj_pair < NUM_ADJACENT_PAIRS_; i_adj_pair++) {
-      DERIV_ID_(i_deriv++) = deriv_ids[PHASE_ID_FIRST_(i_adj_pair)];
-      DERIV_ID_(i_deriv++) = deriv_ids[PHASE_ID_SECOND_(i_adj_pair)];
-  }
+  //for (int i_adj_pair = 0, i_deriv = 0; i_adj_pair < NUM_ADJACENT_PAIRS_; i_adj_pair++) {
+  //    DERIV_ID_(i_deriv++) = deriv_ids[PHASE_ID_FIRST_(i_adj_pair)];
+  //    DERIV_ID_(i_deriv++) = deriv_ids[PHASE_ID_SECOND_(i_adj_pair)];
+  //}
 
 /*
   // Update the Jacobian ids
@@ -291,14 +285,14 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
                     (DIFF_COEFF_SECOND_(i_adj_pairs) / layer_thickness_second)
                     * state[PHASE_ID_SECOND_(i_adj_pairs)]);
     
-    if (DERIV_ID_(i_deriv) < 0) {
-      i_deriv++;
-      continue;
-    }
-    time_derivative_add_value(time_deriv, DERIV_ID_(i_deriv++),
-                              rate_first);
-    time_derivative_add_value(time_deriv, DERIV_ID_(i_deriv++),
-                              rate_second);
+    //if (DERIV_ID_(i_deriv) < 0) {
+    //  i_deriv++;
+    //  continue;
+    //}
+    //time_derivative_add_value(time_deriv, DERIV_ID_(i_deriv++),
+    //                          rate_first);
+    //time_derivative_add_value(time_deriv, DERIV_ID_(i_deriv++),
+    //                          rate_second);
   }
   return;
 }

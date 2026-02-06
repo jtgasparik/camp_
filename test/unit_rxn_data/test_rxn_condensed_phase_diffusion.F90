@@ -12,7 +12,7 @@ program camp_test_condensed_phase_diffusion
 
   use camp_util,                         only: i_kind, dp, assert, &
                                               almost_equal, string_t, &
-                                              warn_msg
+                                              warn_msg, to_string
   use camp_camp_core
   use camp_camp_state
   use camp_aero_rep_data
@@ -20,6 +20,9 @@ program camp_test_condensed_phase_diffusion
   use camp_aero_rep_single_particle
   use camp_aero_rep_modal_binned_mass
   use camp_solver_stats
+  use camp_rxn_data
+  use camp_rxn_condensed_phase_diffusion
+  use camp_mechanism_data
 #ifdef CAMP_USE_JSON
   use json_module
 #endif
@@ -90,7 +93,7 @@ contains
     real(kind=dp), allocatable, dimension(:,:) :: model_conc, true_conc
     integer(kind=i_kind) :: idx_solute_l1, idx_solute_l2, idx_solute_l3, &
             idx_solute_l4, idx_H2O_l1, idx_H2O_l2, idx_H2O_l3, idx_H2O_l4, &
-            i_time, i_spec
+            i_time, i_spec, i
     real(kind=dp) :: time_step, time, conc_solute_l1, conc_solute_l2, conc_solutel3, &
          conc_solute_l4, conc_water, MW_solute, D_solute
 #ifdef CAMP_USE_MPI
@@ -104,6 +107,13 @@ contains
     type(aero_rep_factory_t) :: aero_rep_factory
     type(aero_rep_update_data_modal_binned_mass_GMD_t) :: update_data_GMD
     type(aero_rep_update_data_modal_binned_mass_GSD_t) :: update_data_GSD
+
+    ! Variables for diffusion coefficient testing
+    type(mechanism_data_t), pointer :: mechanism
+    class(rxn_data_t), pointer :: rxn
+    integer(kind=i_kind) :: i_rxn, num_adjacent_pairs
+    real(kind=dp) :: expected_diff_coeff
+    real(kind=dp), allocatable :: diff_coeff_first(:), diff_coeff_second(:)
 
     call assert_msg(227053212, scenario.eq.1, &
               "Invalid scenario specified: "//to_string( scenario ))
@@ -263,6 +273,45 @@ contains
         !                trim( to_string( i_time ) ) )
 #endif
 
+      ! Test diffusion coefficients
+      key = "condensed phase diffusion"
+      if (camp_core%get_mechanism(key, mechanism)) then
+        ! Find the condensed phase diffusion reaction
+        do i_rxn = 1, mechanism%size()
+          rxn => mechanism%get_rxn(i_rxn)
+          select type (rxn_diffusion => rxn)
+            class is (rxn_condensed_phase_diffusion_t)
+              ! Get the number of adjacent phase pairs
+              num_adjacent_pairs = rxn_diffusion%condensed_data_int(1)
+              
+              ! Allocate arrays for diffusion coefficients
+              if (.not. allocated(diff_coeff_first)) then
+                allocate(diff_coeff_first(num_adjacent_pairs))
+                allocate(diff_coeff_second(num_adjacent_pairs))
+              end if
+              
+              ! Extract diffusion coefficients from condensed data
+              do i = 1, num_adjacent_pairs
+                diff_coeff_first(i) = rxn_diffusion%condensed_data_real(num_adjacent_pairs + i)
+                diff_coeff_second(i) = rxn_diffusion%condensed_data_real(2*num_adjacent_pairs + i)
+              end do
+              
+              ! Test that all diffusion coefficients match the expected value
+              expected_diff_coeff = 1.5d-5
+              do i = 1, num_adjacent_pairs
+                call assert_msg(449021345, almost_equal(diff_coeff_first(i), expected_diff_coeff, 1.0d-15), &
+                                "DIFF_COEFF_FIRST for pair "//trim(to_string(i))//" is "// &
+                                trim(to_string(diff_coeff_first(i)))//" expected "// &
+                                trim(to_string(expected_diff_coeff)))
+                call assert_msg(593847156, almost_equal(diff_coeff_second(i), expected_diff_coeff, 1.0d-15), &
+                                "DIFF_COEFF_SECOND for pair "//trim(to_string(i))//" is "// &
+                                trim(to_string(diff_coeff_second(i)))//" expected "// &
+                                trim(to_string(expected_diff_coeff)))
+              end do
+          end select
+        end do
+      end if
+
       deallocate(camp_state)
 
 #ifdef CAMP_USE_MPI
@@ -289,6 +338,10 @@ contains
 
     deallocate(buffer)
 #endif
+
+    ! Deallocate diffusion coefficient arrays if they were allocated
+    if (allocated(diff_coeff_first)) deallocate(diff_coeff_first)
+    if (allocated(diff_coeff_second)) deallocate(diff_coeff_second)
 
     deallocate(camp_core)
 
