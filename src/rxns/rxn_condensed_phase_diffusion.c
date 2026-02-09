@@ -284,6 +284,9 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
                     * state[PHASE_ID_FIRST_(i_adj_pairs)] -
                     (DIFF_COEFF_SECOND_(i_adj_pairs) / layer_thickness_second)
                     * state[PHASE_ID_SECOND_(i_adj_pairs)]);
+    fprintf(stderr, "\n\nDiffusion rate for phase pair %d %d: %Le %Le\n",
+          PHASE_ID_FIRST_(i_adj_pairs), PHASE_ID_SECOND_(i_adj_pairs),
+          rate_first, rate_second);
     
     //if (DERIV_ID_(i_deriv) < 0) {
     //  i_deriv++;

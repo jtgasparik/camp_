@@ -177,7 +177,6 @@ contains
     
     call species%iter_reset()
     do i_species = 1, species%size()
-      print * , "Processing species ", species%size()
 
       ! Get the species properties
       call assert_msg(815257799, species%get_property_t(val=spec_props), &
@@ -232,7 +231,6 @@ contains
     do i_aero_rep = 1, size(aero_rep) 
       adjacent_phases = aero_rep(i_aero_rep)%val%adjacent_phases(diffusion_phase_names(1)%string, &
          diffusion_phase_names(SIZE(diffusion_phase_names))%string)
-      print * , "number of adjacent phases found: ", size(adjacent_phases)
       if (size(adjacent_phases) .gt. 0) then
         do i = 1, size(adjacent_phases)
           num_adjacent_pairs = num_adjacent_pairs + 1
@@ -271,21 +269,12 @@ contains
             key_name = "diffusion coefficient [m2 s-1]"
             if (spec_property_set%get_real(key_name, temp_real)) then
              DIFF_COEFF_SECOND_(i_adj_pairs) = temp_real
-              print *, "Set DIFF_COEFF_SECOND for pair ", i_adj_pairs, " = ", temp_real
             else
               print *, "WARNING: Could not find diffusion coefficient for pair ", i_adj_pairs
             end if
           end if
         end do
       end do
-    end do
-    print * , "Diffusion Coefficients for first phase:"
-    do i = 1, num_adjacent_pairs
-      print * , "  ", DIFF_COEFF_FIRST_(i)
-    end do
-    print * , "Diffusion Coefficients for second phase:"
-    do i = 1, num_adjacent_pairs
-      print * , "  ", DIFF_COEFF_SECOND_(i)
     end do
 
     ! Set up a general error message
