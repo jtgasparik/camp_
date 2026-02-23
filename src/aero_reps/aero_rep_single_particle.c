@@ -185,7 +185,6 @@ void aero_rep_single_particle_get_effective_layer_radius__m(
     }
   }
   *layer_radius = pow(((*layer_radius) * 3.0 / 4.0 / 3.14159265359), 1.0 / 3.0);
-  printf("Layer radius: %e\n", *layer_radius);
   if (!partial_deriv) return;
   for (int i_layer = 0; i_layer <= i_layer_radius; ++i_layer) {
     for (int i_phase = 0; i_phase < NUM_PHASES_(i_layer); ++i_phase) {

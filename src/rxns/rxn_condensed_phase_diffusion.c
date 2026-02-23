@@ -30,8 +30,8 @@
 
 #define DIFF_COEFF_FIRST_(x) (float_data[NUM_ADJACENT_PAIRS_ + x]-1)
 #define DIFF_COEFF_SECOND_(x) (float_data[2*NUM_ADJACENT_PAIRS_ + x]-1)
-#define PHASE_ID_FIRST_(x) (int_data[NUM_ADJACENT_PAIRS_ + x]-1)
-#define PHASE_ID_SECOND_(x) (int_data[2*NUM_ADJACENT_PAIRS_ + x]-1)
+#define PHASE_ID_FIRST_(x) (int_data[NUM_INT_PROP_ + NUM_ADJACENT_PAIRS_ + x]-1)
+#define PHASE_ID_SECOND_(x) (int_data[NUM_INT_PROP_ + 2*NUM_ADJACENT_PAIRS_ + x]-1)
 
 #define DERIV_ID_(x) (int_data[3*BLOCK_SIZE_ + x])
 #define AERO_REP_ID_(x) (int_data[4*BLOCK_SIZE_ + x]-1)
@@ -225,6 +225,8 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
 
   // Calculate derivative contributions for each aerosol phase
   for (int i_adj_pairs = 0, i_deriv = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; i_adj_pairs++) {
+    //printf("PHASE_ID_FIRST_%d: %d\n", i_adj_pairs, PHASE_ID_FIRST_(i_adj_pairs));
+    //printf("PHASE_ID_SECOND_%d: %d\n", i_adj_pairs, PHASE_ID_SECOND_(i_adj_pairs));
     // Get the layer thickness for first phase id (m)
     realtype layer_thickness_first;
     aero_rep_get_layer_thickness__m(
@@ -233,6 +235,7 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
         PHASE_ID_FIRST_(i_adj_pairs), // first phase id
         &layer_thickness_first, // layer thickness 
         NULL); // partial derivative
+        //printf("Layer thickness for adjacent pair %d, phase %d: %Le\n", i_adj_pairs, PHASE_ID_FIRST_(i_adj_pairs), layer_thickness_first);  
 
     // Get the layer thickness for second phase id (m)
     realtype layer_thickness_second;
@@ -242,6 +245,7 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
         PHASE_ID_SECOND_(i_adj_pairs), // second phase id
         &layer_thickness_second, // layer thickness 
         NULL); // partial derivative
+        //printf("Layer thickness for adjacent pair %d, phase %d: %Le\n", i_adj_pairs, PHASE_ID_SECOND_(i_adj_pairs), layer_thickness_second);    
 
     // Get the interface surface area (m2)
     realtype eff_sa;
@@ -252,6 +256,7 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
         PHASE_ID_SECOND_(i_adj_pairs), // second phase id
         &eff_sa, // interface surface area 
         NULL); // partial derivative
+    //printf("Interface surface area for adjacent pair %d: %Le\n", i_adj_pairs, eff_sa);
 
     // Get the volume of the first phase
     realtype volume_phase_first;
@@ -261,6 +266,7 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
         state,
         &volume_phase_first, // volume of first phase
         NULL); // partial derivative
+    //printf("Volume of phase %d for adjacent pair %d: %Le\n", PHASE_ID_FIRST_(i_adj_pairs), i_adj_pairs, volume_phase_first);
 
     // Get the volume of the second phase
     realtype volume_phase_second;
@@ -270,6 +276,7 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
         state,
         &volume_phase_second, // volume of second phase
         NULL); // partial derivative
+    //printf("Volume of phase %d for adjacent pair %d: %Le\n", PHASE_ID_SECOND_(i_adj_pairs), i_adj_pairs, volume_phase_second);
 
     // Calculate the rate constant for diffusion limited mass transfer between
     // particle layers
@@ -284,9 +291,7 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
                     * state[PHASE_ID_FIRST_(i_adj_pairs)] -
                     (DIFF_COEFF_SECOND_(i_adj_pairs) / layer_thickness_second)
                     * state[PHASE_ID_SECOND_(i_adj_pairs)]);
-    fprintf(stderr, "\n\nDiffusion rate for phase pair %d %d: %Le %Le\n",
-          PHASE_ID_FIRST_(i_adj_pairs), PHASE_ID_SECOND_(i_adj_pairs),
-          rate_first, rate_second);
+    //printf("Diffusion rate for adjacent pair %d: %Le\n", i_adj_pairs, rate_first);
     
     //if (DERIV_ID_(i_deriv) < 0) {
     //  i_deriv++;

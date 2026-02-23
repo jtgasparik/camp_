@@ -102,11 +102,13 @@ contains
 #endif
 
     type(solver_stats_t), target :: solver_stats
+    real(kind=dp), target :: radius, number_conc
 
     integer(kind=i_kind) :: i_sect_unused, i_sect_the_mode
+
+    ! For setting particle radius and number concentration
     type(aero_rep_factory_t) :: aero_rep_factory
-    type(aero_rep_update_data_modal_binned_mass_GMD_t) :: update_data_GMD
-    type(aero_rep_update_data_modal_binned_mass_GSD_t) :: update_data_GSD
+    type(aero_rep_update_data_single_particle_number_t) :: number_update
 
     ! Variables for diffusion coefficient testing
     type(mechanism_data_t), pointer :: mechanism
@@ -154,6 +156,14 @@ contains
       key = "my aero rep 2"
       call assert(337943171, camp_core%get_aero_rep(key, aero_rep_ptr))
 
+      select type (aero_rep_ptr)
+        type is (aero_rep_single_particle_t)
+          call camp_core%initialize_update_object( aero_rep_ptr, &
+                                                     number_update )
+        class default
+          call die_msg(594380626, "Incorrect aerosol representation type")
+      end select
+
       ! Get species indices
       idx_prefix = "P2.one layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
@@ -189,9 +199,12 @@ contains
 #ifdef CAMP_USE_MPI
       ! pack the camp core
       pack_size = camp_core%pack_size()
+      pack_size = pack_size &
+                + number_update%pack_size()
       allocate(buffer(pack_size))
       pos = 0
       call camp_core%bin_pack(buffer, pos)
+      call number_update%bin_pack(buffer, pos)
       call assert(761722462, pos.eq.pack_size)
     end if
 
@@ -221,10 +234,12 @@ contains
       camp_core => camp_core_t()
       pos = 0
       call camp_core%bin_unpack(buffer, pos)
+      call number_update%bin_unpack(buffer, pos)
       call assert(967359696, pos.eq.pack_size)
       allocate(buffer_copy(pack_size))
       pos = 0
       call camp_core%bin_pack(buffer_copy, pos)
+      call number_update%bin_pack(buffer_copy, pos)
       call assert(524365939, pos.eq.pack_size)
       do i_elem = 1, pack_size
         call assert_msg(811596732, buffer(i_elem).eq.buffer_copy(i_elem), &
@@ -256,14 +271,29 @@ contains
       true_conc(:,idx_H2O_l3) = conc_water
       true_conc(:,idx_H2O_l4) = conc_water
       model_conc(0,:) = true_conc(0,:)
+      number_conc = 1.3e6         ! particle number concentration (#/cc)
+
+      ! Update the aerosol representation (single particle only)
+      call number_update%set_number__n_m3(1, number_conc)
+      call camp_core%update_data(number_update)
 
       ! Set the initial state in the model
       camp_state%state_var(:) = model_conc(0,:)
 
 #ifdef CAMP_DEBUG
       ! Evaluate the Jacobian during solving
-      solver_stats%eval_Jac = .true.
+      !solver_stats%eval_Jac = .true.
 #endif
+
+      ! Integrate the mechanism
+      do i_time = 1, NUM_TIME_STEP
+
+        ! Get the modeled conc
+        call camp_core%solve(camp_state, time_step, &
+                              solver_stats = solver_stats)
+        model_conc(i_time,:) = camp_state%state_var(:)
+
+      end do
 
 #ifdef CAMP_DEBUG
         ! Check the Jacobian evaluations

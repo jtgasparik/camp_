@@ -68,8 +68,8 @@ module camp_rxn_condensed_phase_diffusion
 #define DIFF_COEFF_SECOND_(x) this%condensed_data_real(2*NUM_ADJACENT_PAIRS_ + x)
 ! PHASE_ID_FIRST_ and PHASE_ID_SECOND_ are arrays of 
 ! length NUM_ADJACENT_PAIRS_
-#define PHASE_ID_FIRST_(x) this%condensed_data_int(NUM_ADJACENT_PAIRS_ + x)
-#define PHASE_ID_SECOND_(x) this%condensed_data_int(2*NUM_ADJACENT_PAIRS_ + x)
+#define PHASE_ID_FIRST_(x) this%condensed_data_int(NUM_INT_PROP_ + NUM_ADJACENT_PAIRS_ + x)
+#define PHASE_ID_SECOND_(x) this%condensed_data_int(NUM_INT_PROP_ + 2*NUM_ADJACENT_PAIRS_ + x)
 
 #define DERIV_ID_(x) this%condensed_data_int(3*BLOCK_SIZE_ + x)
 #define AERO_REP_ID_(x) this%condensed_data_int(4*BLOCK_SIZE_ + x)
@@ -231,12 +231,18 @@ contains
     do i_aero_rep = 1, size(aero_rep) 
       adjacent_phases = aero_rep(i_aero_rep)%val%adjacent_phases(diffusion_phase_names(1)%string, &
          diffusion_phase_names(SIZE(diffusion_phase_names))%string)
+      !print *, "Aerosol representation ", i_aero_rep, " has ", size(adjacent_phases), " adjacent phase pairs for diffusion between '", &
+      !         diffusion_phase_names(1)%string, "' and '", diffusion_phase_names(SIZE(diffusion_phase_names))%string, "'."
       if (size(adjacent_phases) .gt. 0) then
         do i = 1, size(adjacent_phases)
           num_adjacent_pairs = num_adjacent_pairs + 1
           PHASE_ID_FIRST_(num_adjacent_pairs) = adjacent_phases(i)%first_
           PHASE_ID_SECOND_(num_adjacent_pairs) = adjacent_phases(i)%second_
+          !print *, "Found adjacent pair: ", PHASE_ID_FIRST_(num_adjacent_pairs), &
+          !         " and ", PHASE_ID_SECOND_(num_adjacent_pairs)
         end do
+        NUM_ADJACENT_PAIRS_ = num_adjacent_pairs
+        !print *, "Total number of adjacent phase pairs for diffusion: ", NUM_ADJACENT_PAIRS_
       end if
     end do
     
