@@ -28,10 +28,10 @@
 #define NUM_ENV_PARAM_ 0
 #define BLOCK_SIZE_ 1000
 
-#define DIFF_COEFF_FIRST_(x) (float_data[NUM_ADJACENT_PAIRS_ + x]-1)
-#define DIFF_COEFF_SECOND_(x) (float_data[2*NUM_ADJACENT_PAIRS_ + x]-1)
-#define PHASE_ID_FIRST_(x) (int_data[NUM_INT_PROP_ + NUM_ADJACENT_PAIRS_ + x]-1)
-#define PHASE_ID_SECOND_(x) (int_data[NUM_INT_PROP_ + 2*NUM_ADJACENT_PAIRS_ + x]-1)
+#define DIFF_COEFF_FIRST_(x) (float_data[NUM_FLOAT_PROP_ + NUM_ADJACENT_PAIRS_ + x]-1)
+#define DIFF_COEFF_SECOND_(x) (float_data[NUM_FLOAT_PROP_ + 2*NUM_ADJACENT_PAIRS_ + x]-1)
+#define PHASE_ID_FIRST_(x) (int_data[NUM_INT_PROP_ + x])
+#define PHASE_ID_SECOND_(x) (int_data[NUM_INT_PROP_ + NUM_ADJACENT_PAIRS_ + x])
 
 #define DERIV_ID_(x) (int_data[3*BLOCK_SIZE_ + x])
 #define AERO_REP_ID_(x) (int_data[4*BLOCK_SIZE_ + x]-1)
@@ -223,10 +223,23 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
   double *state = model_data->grid_cell_state;
   double *env_data = model_data->grid_cell_env;
 
+  for (int i = 0; i < 35; i++) {
+    printf("int_data[%d] = %d\n", i, int_data[i]);
+  }
+  /* Debug: dump condensed int_data region used for phase ids */
+  {
+    int nap = NUM_ADJACENT_PAIRS_;
+    int offset_base = NUM_INT_PROP_ + nap;
+    printf("DEBUG condensed int_data: NUM_ADJACENT_PAIRS_=%d offset_base=%d\n", nap, offset_base);
+    for (int ii = 0; ii < nap * 2 && ii < 64; ++ii) {
+      printf("  int_data[%d]=%d\n", offset_base + ii, int_data[offset_base + ii]);
+    }
+  }
+
   // Calculate derivative contributions for each aerosol phase
   for (int i_adj_pairs = 0, i_deriv = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; i_adj_pairs++) {
-    //printf("PHASE_ID_FIRST_%d: %d\n", i_adj_pairs, PHASE_ID_FIRST_(i_adj_pairs));
-    //printf("PHASE_ID_SECOND_%d: %d\n", i_adj_pairs, PHASE_ID_SECOND_(i_adj_pairs));
+    printf("PHASE_ID_FIRST_%d: %d\n", i_adj_pairs, PHASE_ID_FIRST_(i_adj_pairs));
+    printf("PHASE_ID_SECOND_%d: %d\n", i_adj_pairs, PHASE_ID_SECOND_(i_adj_pairs));
     // Get the layer thickness for first phase id (m)
     realtype layer_thickness_first;
     aero_rep_get_layer_thickness__m(

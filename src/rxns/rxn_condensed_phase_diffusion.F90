@@ -64,12 +64,12 @@ module camp_rxn_condensed_phase_diffusion
 #define NUM_ENV_PARAM_ 0
 #define BLOCK_SIZE_ 1000
 
-#define DIFF_COEFF_FIRST_(x) this%condensed_data_real(NUM_ADJACENT_PAIRS_ + x) 
-#define DIFF_COEFF_SECOND_(x) this%condensed_data_real(2*NUM_ADJACENT_PAIRS_ + x)
+#define DIFF_COEFF_FIRST_(x) this%condensed_data_real(NUM_REAL_PROP_ + NUM_ADJACENT_PAIRS_ + x) 
+#define DIFF_COEFF_SECOND_(x) this%condensed_data_real(NUM_REAL_PROP_ +2*NUM_ADJACENT_PAIRS_ + x)
 ! PHASE_ID_FIRST_ and PHASE_ID_SECOND_ are arrays of 
 ! length NUM_ADJACENT_PAIRS_
-#define PHASE_ID_FIRST_(x) this%condensed_data_int(NUM_INT_PROP_ + NUM_ADJACENT_PAIRS_ + x)
-#define PHASE_ID_SECOND_(x) this%condensed_data_int(NUM_INT_PROP_ + 2*NUM_ADJACENT_PAIRS_ + x)
+#define PHASE_ID_FIRST_(x) this%condensed_data_int(NUM_INT_PROP_ + x)
+#define PHASE_ID_SECOND_(x) this%condensed_data_int(NUM_INT_PROP_ + NUM_ADJACENT_PAIRS_ + x)
 
 #define DERIV_ID_(x) this%condensed_data_int(3*BLOCK_SIZE_ + x)
 #define AERO_REP_ID_(x) this%condensed_data_int(4*BLOCK_SIZE_ + x)
@@ -237,14 +237,26 @@ contains
         do i = 1, size(adjacent_phases)
           num_adjacent_pairs = num_adjacent_pairs + 1
           PHASE_ID_FIRST_(num_adjacent_pairs) = adjacent_phases(i)%first_
-          PHASE_ID_SECOND_(num_adjacent_pairs) = adjacent_phases(i)%second_
-          !print *, "Found adjacent pair: ", PHASE_ID_FIRST_(num_adjacent_pairs), &
-          !         " and ", PHASE_ID_SECOND_(num_adjacent_pairs)
+          print *, "Found adjacent pair first: ", PHASE_ID_FIRST_(num_adjacent_pairs)
         end do
         NUM_ADJACENT_PAIRS_ = num_adjacent_pairs
-        !print *, "Total number of adjacent phase pairs for diffusion: ", NUM_ADJACENT_PAIRS_
       end if
     end do
+
+    num_adjacent_pairs = 0
+    do i_aero_rep = 1, size(aero_rep) 
+      adjacent_phases = aero_rep(i_aero_rep)%val%adjacent_phases(diffusion_phase_names(1)%string, &
+         diffusion_phase_names(SIZE(diffusion_phase_names))%string)
+      if (size(adjacent_phases) .gt. 0) then
+        do i = 1, size(adjacent_phases)
+          num_adjacent_pairs = num_adjacent_pairs + 1
+          PHASE_ID_SECOND_(num_adjacent_pairs) = adjacent_phases(i)%second_
+          print *, "Found adjacent pair second: ", PHASE_ID_SECOND_(num_adjacent_pairs)
+        end do
+      end if
+    end do
+    print *, "PHASE_ID_FIRST_ F90: ", PHASE_ID_FIRST_(1), ", ", PHASE_ID_FIRST_(2)
+    print *, "PHASE_ID_SECOND_ F90: ", PHASE_ID_SECOND_(1), ", ", PHASE_ID_SECOND_(2)
     
     call assert_msg(051987857, num_adjacent_pairs .gt. 0, &
        "No adjacent phases found condensed phase diffusion reaction.")
@@ -303,6 +315,44 @@ contains
       AERO_REP_ID_(i_aero_id) = i_aero_rep
       i_aero_id = i_aero_id + 1
     end do
+
+    !print *, "condensed_data_int size: ", size(this%condensed_data_int)
+    !print *, "condensed_real_data size: ", size(this%condensed_data_real)
+    !print *, "condensed_data_int[0]: ", this%condensed_data_int(1)
+    !print *, "condensed_data_int[1]: ", this%condensed_data_int(2)
+    !print *, "condensed_data_int[2]: ", this%condensed_data_int(3)
+    !print *, "condensed_data_int[3]: ", this%condensed_data_int(4)
+    !print *, "condensed_data_int[4]: ", this%condensed_data_int(5)
+    !print *, "condensed_data_int[5]: ", this%condensed_data_int(6)
+    !print *, "condensed_data_int[6]: ", this%condensed_data_int(7)
+    !print *, "condensed_data_int[7]: ", this%condensed_data_int(8)
+    !print *, "condensed_data_int[8]: ", this%condensed_data_int(9)
+    !print *, "condensed_data_int[9]: ", this%condensed_data_int(10)
+    !print *, "condensed_data_int[10]: ", this%condensed_data_int(11)
+    !print *, "condensed_data_int[11]: ", this%condensed_data_int(12)
+    !print *, "condensed_data_int[12]: ", this%condensed_data_int(13)
+    !print *, "condensed_data_int[13]: ", this%condensed_data_int(14)
+    !print *, "condensed_data_int[14]: ", this%condensed_data_int(15)
+    !print *, "condensed_data_int[15]: ", this%condensed_data_int(16)
+    !print *, "condensed_data_int[16]: ", this%condensed_data_int(17)
+    !print *, "condensed_data_int[17]: ", this%condensed_data_int(18)
+    !print *, "condensed_data_int[18]: ", this%condensed_data_int(19)
+    !print *, "condensed_data_int[19]: ", this%condensed_data_int(20)
+    !print *, "condensed_data_int[20]: ", this%condensed_data_int(21)
+    !print *, "condensed_data_int[21]: ", this%condensed_data_int(22)
+    !print *, "condensed_data_int[22]: ", this%condensed_data_int(23)
+    !print *, "condensed_data_int[23]: ", this%condensed_data_int(24)
+    !print *, "condensed_data_int[24]: ", this%condensed_data_int(25)
+    !print *, "condensed_data_int[25]: ", this%condensed_data_int(26)
+    !print *, "condensed_data_int[26]: ", this%condensed_data_int(27)
+    !print *, "condensed_data_int[27]: ", this%condensed_data_int(28)
+    !print *, "condensed_data_int[28]: ", this%condensed_data_int(29)
+    !print *, "condensed_data_int[29]: ", this%condensed_data_int(30)
+    !print *, "condensed_data_int[30]: ", this%condensed_data_int(31)
+    !print *, "condensed_data_int[31]: ", this%condensed_data_int(32)
+    !print *, "condensed_data_int[32]: ", this%condensed_data_int(33)
+    !print *, "condensed_data_int[33]: ", this%condensed_data_int(34)
+    !print *, "condensed_data_int[34]: ", this%condensed_data_int(35)
 
   end subroutine initialize
 
