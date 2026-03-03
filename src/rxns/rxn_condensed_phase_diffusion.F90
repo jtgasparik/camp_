@@ -197,6 +197,9 @@ contains
               "Missing species name in condensed phase reaction for species "// &
               species_name)
       diffusion_species_names(i_species)%string = species_name
+      print *, "Condensed phase diffusion reaction species ", i_species, ": '", &
+               diffusion_species_names(i_species)%string, "' in phase '", &
+               diffusion_phase_names(i_species)%string, "'."
 
       call species%iter_next()
     end do
@@ -237,7 +240,7 @@ contains
         do i = 1, size(adjacent_phases)
           num_adjacent_pairs = num_adjacent_pairs + 1
           PHASE_ID_FIRST_(num_adjacent_pairs) = adjacent_phases(i)%first_
-          print *, "Found adjacent pair first: ", PHASE_ID_FIRST_(num_adjacent_pairs)
+          !print *, "Found adjacent pair first: ", PHASE_ID_FIRST_(num_adjacent_pairs)
         end do
         NUM_ADJACENT_PAIRS_ = num_adjacent_pairs
       end if
@@ -251,12 +254,12 @@ contains
         do i = 1, size(adjacent_phases)
           num_adjacent_pairs = num_adjacent_pairs + 1
           PHASE_ID_SECOND_(num_adjacent_pairs) = adjacent_phases(i)%second_
-          print *, "Found adjacent pair second: ", PHASE_ID_SECOND_(num_adjacent_pairs)
+          !print *, "Found adjacent pair second: ", PHASE_ID_SECOND_(num_adjacent_pairs)
         end do
       end if
     end do
-    print *, "PHASE_ID_FIRST_ F90: ", PHASE_ID_FIRST_(1), ", ", PHASE_ID_FIRST_(2)
-    print *, "PHASE_ID_SECOND_ F90: ", PHASE_ID_SECOND_(1), ", ", PHASE_ID_SECOND_(2)
+    !print *, "PHASE_ID_FIRST_ F90: ", PHASE_ID_FIRST_(1), ", ", PHASE_ID_FIRST_(2)
+    !print *, "PHASE_ID_SECOND_ F90: ", PHASE_ID_SECOND_(1), ", ", PHASE_ID_SECOND_(2)
     
     call assert_msg(051987857, num_adjacent_pairs .gt. 0, &
        "No adjacent phases found condensed phase diffusion reaction.")

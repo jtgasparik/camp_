@@ -223,23 +223,23 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
   double *state = model_data->grid_cell_state;
   double *env_data = model_data->grid_cell_env;
 
-  for (int i = 0; i < 35; i++) {
-    printf("int_data[%d] = %d\n", i, int_data[i]);
-  }
+  //for (int i = 0; i < 35; i++) {
+  //  printf("int_data[%d] = %d\n", i, int_data[i]);
+  //}
   /* Debug: dump condensed int_data region used for phase ids */
   {
-    int nap = NUM_ADJACENT_PAIRS_;
-    int offset_base = NUM_INT_PROP_ + nap;
-    printf("DEBUG condensed int_data: NUM_ADJACENT_PAIRS_=%d offset_base=%d\n", nap, offset_base);
-    for (int ii = 0; ii < nap * 2 && ii < 64; ++ii) {
-      printf("  int_data[%d]=%d\n", offset_base + ii, int_data[offset_base + ii]);
-    }
+    //int nap = NUM_ADJACENT_PAIRS_;
+    //int offset_base = NUM_INT_PROP_ + nap;
+    //printf("DEBUG condensed int_data: NUM_ADJACENT_PAIRS_=%d offset_base=%d\n", nap, offset_base);
+    //for (int ii = 0; ii < nap * 2 && ii < 64; ++ii) {
+    //  printf("  int_data[%d]=%d\n", offset_base + ii, int_data[offset_base + ii]);
+    //}
   }
 
   // Calculate derivative contributions for each aerosol phase
   for (int i_adj_pairs = 0, i_deriv = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; i_adj_pairs++) {
-    printf("PHASE_ID_FIRST_%d: %d\n", i_adj_pairs, PHASE_ID_FIRST_(i_adj_pairs));
-    printf("PHASE_ID_SECOND_%d: %d\n", i_adj_pairs, PHASE_ID_SECOND_(i_adj_pairs));
+    //printf("PHASE_ID_FIRST_%d: %d\n", i_adj_pairs, PHASE_ID_FIRST_(i_adj_pairs));
+    //printf("PHASE_ID_SECOND_%d: %d\n", i_adj_pairs, PHASE_ID_SECOND_(i_adj_pairs));
     // Get the layer thickness for first phase id (m)
     realtype layer_thickness_first;
     aero_rep_get_layer_thickness__m(
