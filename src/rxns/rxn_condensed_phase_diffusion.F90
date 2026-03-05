@@ -64,15 +64,15 @@ module camp_rxn_condensed_phase_diffusion
 #define NUM_ENV_PARAM_ 0
 #define BLOCK_SIZE_ 1000
 
-#define DIFF_COEFF_FIRST_(x) this%condensed_data_real(NUM_REAL_PROP_ + NUM_ADJACENT_PAIRS_ + x) 
-#define DIFF_COEFF_SECOND_(x) this%condensed_data_real(NUM_REAL_PROP_ +2*NUM_ADJACENT_PAIRS_ + x)
+#define DIFF_COEFF_FIRST_(x) this%condensed_data_real(NUM_REAL_PROP_ + x) 
+#define DIFF_COEFF_SECOND_(x) this%condensed_data_real(NUM_REAL_PROP_ + NUM_ADJACENT_PAIRS_ + x)
 ! PHASE_ID_FIRST_ and PHASE_ID_SECOND_ are arrays of 
 ! length NUM_ADJACENT_PAIRS_
 #define PHASE_ID_FIRST_(x) this%condensed_data_int(NUM_INT_PROP_ + x)
 #define PHASE_ID_SECOND_(x) this%condensed_data_int(NUM_INT_PROP_ + NUM_ADJACENT_PAIRS_ + x)
+#define AERO_REP_ID_(x) this%condensed_data_int(NUM_INT_PROP_ + 2*NUM_ADJACENT_PAIRS_ + x)
 
 #define DERIV_ID_(x) this%condensed_data_int(3*BLOCK_SIZE_ + x)
-#define AERO_REP_ID_(x) this%condensed_data_int(4*BLOCK_SIZE_ + x)
 !#define JAC_ID_(x) this%condensed_data_int(4*BLOCK_SIZE_ + x)
 !#define PHASE_INT_LOC_(x) this%condensed_data_int(5*BLOCK_SIZE_ + x) 
 !#define PHASE_REAL_LOC_(x) this%condensed_data_int(6*BLOCK_SIZE_ + x)
@@ -143,15 +143,14 @@ contains
     character(len=:), allocatable :: phase_name, species_name
     integer(kind=i_kind) :: num_adjacent_pairs, phase_id_array_size
     integer(kind=i_kind) :: state_size, max_particles, offset, i_particle 
-    integer(kind=i_kind) :: i_spec, i_aero_rep, i_aero_id, i
+    integer(kind=i_kind) :: i_spec, i_aero_rep, i_aero_id, i, i_adj_rep_id
     integer(kind=i_kind) :: i_phase, i_species, tmp_size
     integer(kind=i_kind) :: n_aero_jac_elem_first, n_aero_jac_elem_second
     integer(kind=i_kind) :: i_adj_pairs, i_phase_ids
     type(string_t), allocatable :: unique_spec_names(:)
-    integer(kind=i_kind), allocatable :: phase_id_first(:), phase_id_second(:)
+    integer(kind=i_kind), allocatable :: adj_phase_size(:)
     type(index_pair_t), allocatable :: adjacent_phases(:)
     real(kind=dp) :: temp_real
-    integer, allocatable :: phase_ids(:)
 
     ! Get the property set
     if (.not. associated(this%property_set)) call die_msg(300992470, &
@@ -230,10 +229,12 @@ contains
     ! For the modal/binned aerosol represetnation (no layers) the adjacent_phases array
     ! is always 0.
     ! Accumulate adjacent phase pairs from all aerosol representations
+    allocate(adj_phase_size(size(aero_rep)))
     num_adjacent_pairs = 0
     do i_aero_rep = 1, size(aero_rep) 
       adjacent_phases = aero_rep(i_aero_rep)%val%adjacent_phases(diffusion_phase_names(1)%string, &
          diffusion_phase_names(SIZE(diffusion_phase_names))%string)
+      adj_phase_size(i_aero_rep) = size(adjacent_phases)
       !print *, "Aerosol representation ", i_aero_rep, " has ", size(adjacent_phases), " adjacent phase pairs for diffusion between '", &
       !         diffusion_phase_names(1)%string, "' and '", diffusion_phase_names(SIZE(diffusion_phase_names))%string, "'."
       if (size(adjacent_phases) .gt. 0) then
@@ -313,49 +314,75 @@ contains
     this%num_env_params = NUM_ENV_PARAM_
 
      ! Set aerosol phase specific indices
+    i_adj_rep_id = 1
     i_aero_id = 1
     do i_aero_rep = 1, size(aero_rep)
-      AERO_REP_ID_(i_aero_id) = i_aero_rep
+      print *, "i_aero_rep: ", i_aero_rep
+      print *, "adj_phase_size: ", adj_phase_size(i_aero_rep)
+      do i_adj_pairs = 1, adj_phase_size(i_aero_rep)
+        AERO_REP_ID_(i_adj_rep_id) = i_aero_id
+        i_adj_rep_id = i_adj_rep_id + 1
+        print *, "AERO_REP_ID_ F90: ", AERO_REP_ID_(i_adj_rep_id)
+      end do
       i_aero_id = i_aero_id + 1
     end do
 
-    !print *, "condensed_data_int size: ", size(this%condensed_data_int)
-    !print *, "condensed_real_data size: ", size(this%condensed_data_real)
-    !print *, "condensed_data_int[0]: ", this%condensed_data_int(1)
-    !print *, "condensed_data_int[1]: ", this%condensed_data_int(2)
-    !print *, "condensed_data_int[2]: ", this%condensed_data_int(3)
-    !print *, "condensed_data_int[3]: ", this%condensed_data_int(4)
-    !print *, "condensed_data_int[4]: ", this%condensed_data_int(5)
-    !print *, "condensed_data_int[5]: ", this%condensed_data_int(6)
-    !print *, "condensed_data_int[6]: ", this%condensed_data_int(7)
-    !print *, "condensed_data_int[7]: ", this%condensed_data_int(8)
-    !print *, "condensed_data_int[8]: ", this%condensed_data_int(9)
-    !print *, "condensed_data_int[9]: ", this%condensed_data_int(10)
-    !print *, "condensed_data_int[10]: ", this%condensed_data_int(11)
-    !print *, "condensed_data_int[11]: ", this%condensed_data_int(12)
-    !print *, "condensed_data_int[12]: ", this%condensed_data_int(13)
-    !print *, "condensed_data_int[13]: ", this%condensed_data_int(14)
-    !print *, "condensed_data_int[14]: ", this%condensed_data_int(15)
-    !print *, "condensed_data_int[15]: ", this%condensed_data_int(16)
-    !print *, "condensed_data_int[16]: ", this%condensed_data_int(17)
-    !print *, "condensed_data_int[17]: ", this%condensed_data_int(18)
-    !print *, "condensed_data_int[18]: ", this%condensed_data_int(19)
-    !print *, "condensed_data_int[19]: ", this%condensed_data_int(20)
-    !print *, "condensed_data_int[20]: ", this%condensed_data_int(21)
-    !print *, "condensed_data_int[21]: ", this%condensed_data_int(22)
-    !print *, "condensed_data_int[22]: ", this%condensed_data_int(23)
-    !print *, "condensed_data_int[23]: ", this%condensed_data_int(24)
-    !print *, "condensed_data_int[24]: ", this%condensed_data_int(25)
-    !print *, "condensed_data_int[25]: ", this%condensed_data_int(26)
-    !print *, "condensed_data_int[26]: ", this%condensed_data_int(27)
-    !print *, "condensed_data_int[27]: ", this%condensed_data_int(28)
-    !print *, "condensed_data_int[28]: ", this%condensed_data_int(29)
-    !print *, "condensed_data_int[29]: ", this%condensed_data_int(30)
-    !print *, "condensed_data_int[30]: ", this%condensed_data_int(31)
-    !print *, "condensed_data_int[31]: ", this%condensed_data_int(32)
-    !print *, "condensed_data_int[32]: ", this%condensed_data_int(33)
-    !print *, "condensed_data_int[33]: ", this%condensed_data_int(34)
-    !print *, "condensed_data_int[34]: ", this%condensed_data_int(35)
+    print *, "condensed_data_int size: ", size(this%condensed_data_int)
+    print *, "condensed_real_data size: ", size(this%condensed_data_real)
+    print *, "condensed_data_int[0]: ", this%condensed_data_int(1)
+    print *, "condensed_data_int[1]: ", this%condensed_data_int(2)
+    print *, "condensed_data_int[2]: ", this%condensed_data_int(3)
+    print *, "condensed_data_int[3]: ", this%condensed_data_int(4)
+    print *, "condensed_data_int[4]: ", this%condensed_data_int(5)
+    print *, "condensed_data_int[5]: ", this%condensed_data_int(6)
+    print *, "condensed_data_int[6]: ", this%condensed_data_int(7)
+    print *, "condensed_data_int[7]: ", this%condensed_data_int(8)
+    print *, "condensed_data_int[8]: ", this%condensed_data_int(9)
+    print *, "condensed_data_int[9]: ", this%condensed_data_int(10)
+    print *, "condensed_data_int[10]: ", this%condensed_data_int(11)
+    print *, "condensed_data_int[11]: ", this%condensed_data_int(12)
+    print *, "condensed_data_int[12]: ", this%condensed_data_int(13)
+    print *, "condensed_data_int[13]: ", this%condensed_data_int(14)
+    print *, "condensed_data_int[14]: ", this%condensed_data_int(15)
+    print *, "condensed_data_int[15]: ", this%condensed_data_int(16)
+    print *, "condensed_data_int[16]: ", this%condensed_data_int(17)
+    print *, "condensed_data_int[17]: ", this%condensed_data_int(18)
+    print *, "condensed_data_int[18]: ", this%condensed_data_int(19)
+    print *, "condensed_data_int[19]: ", this%condensed_data_int(20)
+    print *, "condensed_data_int[20]: ", this%condensed_data_int(21)
+    print *, "condensed_data_int[21]: ", this%condensed_data_int(22)
+    print *, "condensed_data_int[22]: ", this%condensed_data_int(23)
+    print *, "condensed_data_int[23]: ", this%condensed_data_int(24)
+    print *, "condensed_data_int[24]: ", this%condensed_data_int(25)
+    print *, "condensed_data_int[25]: ", this%condensed_data_int(26)
+    print *, "condensed_data_int[26]: ", this%condensed_data_int(27)
+    print *, "condensed_data_int[27]: ", this%condensed_data_int(28)
+    print *, "condensed_data_int[28]: ", this%condensed_data_int(29)
+    print *, "condensed_data_int[29]: ", this%condensed_data_int(30)
+    print *, "condensed_data_int[30]: ", this%condensed_data_int(31)
+    print *, "condensed_data_int[31]: ", this%condensed_data_int(32)
+    print *, "condensed_data_int[32]: ", this%condensed_data_int(33)
+    print *, "condensed_data_int[33]: ", this%condensed_data_int(34)
+    print *, "condensed_data_int[34]: ", this%condensed_data_int(35)
+    print *, "condensed_data_int[35]: ", this%condensed_data_int(36)
+    print *, "condensed_data_int[36]: ", this%condensed_data_int(37)
+    print *, "condensed_data_int[37]: ", this%condensed_data_int(38)
+    print *, "condensed_data_int[38]: ", this%condensed_data_int(39)
+    print *, "condensed_data_int[39]: ", this%condensed_data_int(40)
+    print *, "condensed_data_int[40]: ", this%condensed_data_int(41)
+    print *, "condensed_data_int[41]: ", this%  condensed_data_int(42)
+    print *, "condensed_data_int[42]: ", this%condensed_data_int(43)
+    print *, "condensed_data_int[43]: ", this%condensed_data_int(44)
+    print *, "condensed_data_int[44]: ", this%condensed_data_int(45)
+    print *, "condensed_data_int[45]: ", this%condensed_data_int(46)
+    print *, "condensed_data_int[46]: ", this%condensed_data_int(47)
+    print *, "condensed_data_int[47]: ", this%condensed_data_int(48)
+    print *, "condensed_data_int[48]: ", this%condensed_data_int(49)
+    print *, "condensed_data_int[49]: ", this%condensed_data_int(50)
+    print *, "condensed_data_int[50]: ", this%condensed_data_int(51)
+    print *, "condensed_data_int[51]: ", this%condensed_data_int(52)
+    print *, "condensed_data_int[52]: ", this%condensed_data_int(53)
+    deallocate(adj_phase_size)
 
   end subroutine initialize
 
