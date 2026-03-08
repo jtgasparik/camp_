@@ -64,15 +64,15 @@ module camp_rxn_condensed_phase_diffusion
 #define NUM_ENV_PARAM_ 0
 #define BLOCK_SIZE_ 1000
 
-#define DIFF_COEFF_FIRST_(x) this%condensed_data_real(NUM_REAL_PROP_ + x) 
-#define DIFF_COEFF_SECOND_(x) this%condensed_data_real(NUM_REAL_PROP_ + NUM_ADJACENT_PAIRS_ + x)
+#define DIFF_COEFF_FIRST_(x) this%condensed_data_real(NUM_REAL_PROP_ + (x)) 
+#define DIFF_COEFF_SECOND_(x) this%condensed_data_real(NUM_REAL_PROP_ + NUM_ADJACENT_PAIRS_ + (x))
 ! PHASE_ID_FIRST_ and PHASE_ID_SECOND_ are arrays of 
 ! length NUM_ADJACENT_PAIRS_
-#define PHASE_ID_FIRST_(x) this%condensed_data_int(NUM_INT_PROP_ + x)
-#define PHASE_ID_SECOND_(x) this%condensed_data_int(NUM_INT_PROP_ + NUM_ADJACENT_PAIRS_ + x)
-#define AERO_REP_ID_(x) this%condensed_data_int(NUM_INT_PROP_ + 2*NUM_ADJACENT_PAIRS_ + x)
+#define PHASE_ID_FIRST_(x) this%condensed_data_int(NUM_INT_PROP_ + (x))
+#define PHASE_ID_SECOND_(x) this%condensed_data_int(NUM_INT_PROP_ + NUM_ADJACENT_PAIRS_ + (x))
+#define AERO_REP_ID_(x) this%condensed_data_int(NUM_INT_PROP_ + 2*NUM_ADJACENT_PAIRS_ + (x))
 
-#define DERIV_ID_(x) this%condensed_data_int(3*BLOCK_SIZE_ + x)
+#define DERIV_ID_(x) this%condensed_data_int(3*BLOCK_SIZE_ + (x))
 !#define JAC_ID_(x) this%condensed_data_int(4*BLOCK_SIZE_ + x)
 !#define PHASE_INT_LOC_(x) this%condensed_data_int(5*BLOCK_SIZE_ + x) 
 !#define PHASE_REAL_LOC_(x) this%condensed_data_int(6*BLOCK_SIZE_ + x)
@@ -221,7 +221,7 @@ contains
     
     ! Allocate space in the condensed data arrays early so macros can be used
     allocate(this%condensed_data_int(BLOCK_SIZE_ * 20 ))
-    allocate(this%condensed_data_real(BLOCK_SIZE_ * 10 ))
+    allocate(this%condensed_data_real(BLOCK_SIZE_ * 1 ))
     this%condensed_data_int(:) = int(0, kind=i_kind)
     this%condensed_data_real(:) = real(0.0, kind=dp)
 
@@ -259,8 +259,6 @@ contains
         end do
       end if
     end do
-    !print *, "PHASE_ID_FIRST_ F90: ", PHASE_ID_FIRST_(1), ", ", PHASE_ID_FIRST_(2)
-    !print *, "PHASE_ID_SECOND_ F90: ", PHASE_ID_SECOND_(1), ", ", PHASE_ID_SECOND_(2)
     
     call assert_msg(051987857, num_adjacent_pairs .gt. 0, &
        "No adjacent phases found condensed phase diffusion reaction.")
@@ -276,6 +274,7 @@ contains
             key_name = "diffusion coefficient [m2 s-1]"
             if (spec_property_set%get_real(key_name, temp_real)) then
               DIFF_COEFF_FIRST_(i_adj_pairs) = temp_real
+              print *, "DIFF_COEFF_FIRST_ for adjacent pair ", i_adj_pairs, ": ", DIFF_COEFF_FIRST_(i_adj_pairs)
             end if
           end if
         end do
@@ -317,12 +316,12 @@ contains
     i_adj_rep_id = 1
     i_aero_id = 1
     do i_aero_rep = 1, size(aero_rep)
-      print *, "i_aero_rep: ", i_aero_rep
-      print *, "adj_phase_size: ", adj_phase_size(i_aero_rep)
+      !print *, "i_aero_rep: ", i_aero_rep
+      !print *, "adj_phase_size: ", adj_phase_size(i_aero_rep)
       do i_adj_pairs = 1, adj_phase_size(i_aero_rep)
         AERO_REP_ID_(i_adj_rep_id) = i_aero_id
         i_adj_rep_id = i_adj_rep_id + 1
-        print *, "AERO_REP_ID_ F90: ", AERO_REP_ID_(i_adj_rep_id)
+        !print *, "AERO_REP_ID_ F90: ", AERO_REP_ID_(i_adj_rep_id)
       end do
       i_aero_id = i_aero_id + 1
     end do
@@ -382,6 +381,41 @@ contains
     print *, "condensed_data_int[50]: ", this%condensed_data_int(51)
     print *, "condensed_data_int[51]: ", this%condensed_data_int(52)
     print *, "condensed_data_int[52]: ", this%condensed_data_int(53)
+    print *, "condensed_data_float[0]: ", this%condensed_data_real(1)
+    print *, "condensed_data_float[1]: ", this%condensed_data_real(2)
+    print *, "condensed_data_float[2]: ", this%condensed_data_real(3)
+    print *, "condensed_data_float[3]: ", this%condensed_data_real(4)
+    print *, "condensed_data_float[4]: ", this%condensed_data_real(5)
+    print *, "condensed_data_float[5]: ", this%condensed_data_real(6)
+    print *, "condensed_data_float[6]: ", this%condensed_data_real(7)
+    print *, "condensed_data_float[7]: ", this%condensed_data_real(8)
+    print *, "condensed_data_float[8]: ", this%condensed_data_real(9)
+    print *, "condensed_data_float[9]: ", this%condensed_data_real(10)
+    print *, "condensed_data_float[10]: ", this%condensed_data_real(11)
+    print *, "condensed_data_float[11]: ", this%condensed_data_real(12)
+    print *, "condensed_data_float[12]: ", this%condensed_data_real(13)
+    print *, "condensed_data_float[13]: ", this%condensed_data_real(14)
+    print *, "condensed_data_float[14]: ", this%condensed_data_real(15)
+    print *, "condensed_data_float[15]: ", this%condensed_data_real(16)
+    print *, "condensed_data_float[16]: ", this%condensed_data_real(17)
+    print *, "condensed_data_float[17]: ", this%condensed_data_real(18)
+    print *, "condensed_data_float[18]: ", this%condensed_data_real(19)
+    print *, "condensed_data_float[19]: ", this%condensed_data_real(20)
+    print *, "condensed_data_float[20]: ", this%condensed_data_real(21)
+    print *, "condensed_data_float[21]: ", this%condensed_data_real(22)
+    print *, "condensed_data_float[22]: ", this%condensed_data_real(23)
+    print *, "condensed_data_float[23]: ", this%condensed_data_real(24)
+    print *, "condensed_data_float[24]: ", this%condensed_data_real(25)
+    print *, "condensed_data_float[25]: ", this%condensed_data_real(26)
+    print *, "condensed_data_float[26]: ", this%condensed_data_real(27)
+    print *, "condensed_data_float[27]: ", this%condensed_data_real(28)
+    print *, "condensed_data_float[28]: ", this%condensed_data_real(29)
+    print *, "condensed_data_float[29]: ", this%condensed_data_real(30)
+    print *, "condensed_data_float[30]: ", this%condensed_data_real(31)
+    print *, "condensed_data_float[31]: ", this%condensed_data_real(32)
+    print *, "condensed_data_float[32]: ", this%condensed_data_real(33)
+    print *, "condensed_data_float[33]: ", this%condensed_data_real(34)
+    print *, "condensed_data_float[34]: ", this%condensed_data_real(35)
     deallocate(adj_phase_size)
 
   end subroutine initialize
