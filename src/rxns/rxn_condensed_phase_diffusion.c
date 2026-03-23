@@ -28,10 +28,10 @@
 #define NUM_ENV_PARAM_ 0
 #define BLOCK_SIZE_ 1000
 
-#define DIFF_COEFF_FIRST_(x) (float_data[NUM_FLOAT_PROP_ + (x)]-1)
-#define DIFF_COEFF_SECOND_(x) (float_data[NUM_FLOAT_PROP_ + NUM_ADJACENT_PAIRS_ + (x)]-1)
-#define PHASE_ID_FIRST_(x) (int_data[NUM_INT_PROP_ + (x)]-1)
-#define PHASE_ID_SECOND_(x) (int_data[NUM_INT_PROP_ + NUM_ADJACENT_PAIRS_ + (x)]-1)
+#define DIFF_COEFF_FIRST_(x) (float_data[NUM_FLOAT_PROP_ + (x)])
+#define DIFF_COEFF_SECOND_(x) (float_data[NUM_FLOAT_PROP_ + NUM_ADJACENT_PAIRS_ + (x)])
+#define PHASE_ID_FIRST_(x) (int_data[NUM_INT_PROP_ + (x)])
+#define PHASE_ID_SECOND_(x) (int_data[NUM_INT_PROP_ + NUM_ADJACENT_PAIRS_ + (x)])
 #define AERO_REP_ID_(x) (int_data[NUM_INT_PROP_ + 2*NUM_ADJACENT_PAIRS_ + (x)]-1)
 
 #define DERIV_ID_(x) (int_data[3*BLOCK_SIZE_ + x])
@@ -224,8 +224,8 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
   double *env_data = model_data->grid_cell_env;
 
   for (int i = 0; i < 53; i++) {
-    printf("int_data[%d] = %d\n", i, int_data[i]);
-    printf("float_data[%d] = %Le\n", i, float_data[i]);
+    //printf("int_data[%d] = %d\n", i, int_data[i]);
+    printf("float_data[%d] = %g\n", i, float_data[i]);
   }
   /* Debug: dump condensed int_data region used for phase ids */
   {
@@ -241,7 +241,7 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
   for (int i_adj_pairs = 0, i_deriv = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; i_adj_pairs++) {
     printf("Calculating condensed phase diffusion for adjacent pair %d\n", i_adj_pairs);
     printf("  Phase ids: %d, %d\n", PHASE_ID_FIRST_(i_adj_pairs), PHASE_ID_SECOND_(i_adj_pairs));
-    printf("  Diffusion coefficients: %Le, %Le\n", DIFF_COEFF_FIRST_(i_adj_pairs), DIFF_COEFF_SECOND_(i_adj_pairs));
+    printf("  Diffusion coefficients: %g, %g\n", DIFF_COEFF_FIRST_(i_adj_pairs), DIFF_COEFF_SECOND_(i_adj_pairs));
     printf("  Aerosol representation id: %d\n", AERO_REP_ID_(i_adj_pairs));
     printf("  State values: %Le, %Le\n", state[PHASE_ID_FIRST_(i_adj_pairs)], state[PHASE_ID_SECOND_(i_adj_pairs)]);
 
