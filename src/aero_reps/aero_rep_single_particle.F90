@@ -891,8 +891,6 @@ contains
         end do
       end do
       deallocate(temp_index_pairs)
-      print *, "num adjacent pairs: ", num_adjacent_pairs
-      print *, "index_pairs: ", index_pairs(1:num_adjacent_pairs)%first_, index_pairs(1:num_adjacent_pairs)%second_
 
     end function adjacent_phases
 
