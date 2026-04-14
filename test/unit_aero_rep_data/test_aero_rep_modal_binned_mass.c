@@ -127,6 +127,58 @@ int test_effective_radius(ModelData * model_data, N_Vector state) {
   return ret_val;
 }
 
+/** \brief Test the aerosol phase volume function
+ *
+ * \param model_data Pointer to the model data
+ * \param state Solver state
+ */
+int test_phase_volume(ModelData * model_data, N_Vector state) {
+
+  int ret_val = 0;
+  double partial_deriv[N_JAC_ELEM+2];
+  double volume = -999.9;
+
+  for( int i = 0; i < N_JAC_ELEM+2; ++i ) partial_deriv[i] = 999.9;
+
+  aero_rep_get_phase_volume__m3_m3(model_data,
+                                        AERO_REP_IDX,
+                                        AERO_PHASE_IDX,
+                                        &volume,
+                                        &(partial_deriv[1]));
+
+  double real_vol =
+      CONC_1A / DENSITY_A +
+      CONC_1B / DENSITY_B +
+      CONC_1C / DENSITY_C;
+
+  ret_val += ASSERT_MSG(fabs(volume-real_vol) < 1.0e-10*real_vol,
+                        "Bad aerosol phase volume");
+
+  /* Expected derivatives */
+  double dV_dA = ONE / ( DENSITY_A );
+  double dV_dB = ONE / ( DENSITY_B );
+  double dV_dC = ONE / ( DENSITY_C );
+
+  ret_val += ASSERT_MSG(partial_deriv[0] == 999.9,
+                        "Bad Jacobian index (-1)");
+
+  ret_val += ASSERT_MSG(fabs(partial_deriv[1]-dV_dA) < fabs(1.0e-12*dV_dA),
+                        "Bad Jacobian element");
+  ret_val += ASSERT_MSG(fabs(partial_deriv[2]-dV_dB) < fabs(1.0e-12*dV_dB),
+                        "Bad Jacobian element");
+  ret_val += ASSERT_MSG(fabs(partial_deriv[3]-dV_dC) < fabs(1.0e-12*dV_dC),
+                        "Bad Jacobian element");
+
+  for( int i = 4; i < N_JAC_ELEM+1; ++i )
+    ret_val += ASSERT_MSG(partial_deriv[i] == ZERO,
+                          "Bad Jacobian element");
+
+  ret_val += ASSERT_MSG(partial_deriv[N_JAC_ELEM+1] == 999.9,
+                        "Bad Jacobian index (end+1)");
+
+  return ret_val;
+}
+
 /** \brief Test the layer thickness
  *
  * \param model_data Pointer to the model data
@@ -415,6 +467,7 @@ int run_aero_rep_modal_c_tests(void *solver_data, double *state, double *env) {
   // Run the property tests
   ret_val += test_effective_layer_radius(model_data, solver_state);
   ret_val += test_effective_radius(model_data, solver_state);
+  ret_val += test_phase_volume(model_data, solver_state);
   ret_val += test_layer_thickness(model_data, solver_state);
   ret_val += test_aero_phase_mass(model_data, solver_state);
   ret_val += test_aero_phase_avg_MW(model_data, solver_state);
