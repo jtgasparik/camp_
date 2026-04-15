@@ -223,10 +223,6 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
   double *state = model_data->grid_cell_state;
   double *env_data = model_data->grid_cell_env;
 
-  for (int i = 0; i < 53; i++) {
-    //printf("int_data[%d] = %d\n", i, int_data[i]);
-    printf("float_data[%d] = %g\n", i, float_data[i]);
-  }
   /* Debug: dump condensed int_data region used for phase ids */
   {
     //int nap = NUM_ADJACENT_PAIRS_;
@@ -247,23 +243,22 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
 
     /* Get the layer thickness for first phase id (m) */
     realtype layer_thickness_first;
+
     aero_rep_get_layer_thickness__m(
-        model_data, //model data 
-        AERO_REP_ID_(i_adj_pairs), // aerosol representation index
-        PHASE_ID_FIRST_(i_adj_pairs), // first phase id
-        &layer_thickness_first, // layer thickness 
-        NULL); // partial derivative
-        //printf("Layer thickness for adjacent pair %d, phase %d: %Le\n", i_adj_pairs, PHASE_ID_FIRST_(i_adj_pairs), layer_thickness_first);  
+      model_data, //model data 
+      AERO_REP_ID_(i_adj_pairs), // aerosol representation index
+      PHASE_ID_FIRST_(i_adj_pairs), // first phase id
+      &layer_thickness_first, // layer thickness 
+      NULL); // partial derivative
 
     // Get the layer thickness for second phase id (m)
     realtype layer_thickness_second;
     aero_rep_get_layer_thickness__m(
-        model_data, //model data 
-        AERO_REP_ID_(i_adj_pairs), // aerosol representation index
-        PHASE_ID_SECOND_(i_adj_pairs), // second phase id
-        &layer_thickness_second, // layer thickness 
-        NULL); // partial derivative
-        //printf("Layer thickness for adjacent pair %d, phase %d: %Le\n", i_adj_pairs, PHASE_ID_SECOND_(i_adj_pairs), layer_thickness_second);    
+      model_data, //model data 
+      AERO_REP_ID_(i_adj_pairs), // aerosol representation index
+      PHASE_ID_SECOND_(i_adj_pairs), // second phase id
+      &layer_thickness_second, // layer thickness 
+      NULL); // partial derivative
 
     // Get the interface surface area (m2)
     realtype eff_sa;
@@ -274,27 +269,24 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
         PHASE_ID_SECOND_(i_adj_pairs), // second phase id
         &eff_sa, // interface surface area 
         NULL); // partial derivative
-    //printf("Interface surface area for adjacent pair %d: %Le\n", i_adj_pairs, eff_sa);
 
     // Get the volume of the first phase
     realtype volume_phase_first;
-    aero_phase_get_volume__m3_m3(
+    aero_rep_get_phase_volume__m3_m3(
         model_data, //model data
-        0, // first phase id
-        &state[PHASE_ID_FIRST_(i_adj_pairs)],
+        AERO_REP_ID_(i_adj_pairs), // aerosol representation index
+        PHASE_ID_FIRST_(i_adj_pairs), // first phase id
         &volume_phase_first, // volume of first phase
         NULL); // partial derivative
-    //printf("Volume of phase %d for adjacent pair %d: %Le\n", PHASE_ID_FIRST_(i_adj_pairs), i_adj_pairs, volume_phase_first);
 
     // Get the volume of the second phase
     realtype volume_phase_second;
-    aero_phase_get_volume__m3_m3(
+    aero_rep_get_phase_volume__m3_m3(
         model_data, //model data
-        0, // second phase id
-        &state[PHASE_ID_SECOND_(i_adj_pairs)],
+        AERO_REP_ID_(i_adj_pairs), // aerosol representation index
+        PHASE_ID_SECOND_(i_adj_pairs), // second phase id
         &volume_phase_second, // volume of second phase
         NULL); // partial derivative
-    //printf("Volume of phase %d for adjacent pair %d: %Le\n", PHASE_ID_SECOND_(i_adj_pairs), i_adj_pairs, volume_phase_second);
 
     // Calculate the rate constant for diffusion limited mass transfer between
     // particle layers
@@ -309,7 +301,6 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
                     * state[PHASE_ID_FIRST_(i_adj_pairs)] -
                     (DIFF_COEFF_SECOND_(i_adj_pairs) / layer_thickness_second)
                     * state[PHASE_ID_SECOND_(i_adj_pairs)]);
-    //printf("Diffusion rate for adjacent pair %d: %Le\n", i_adj_pairs, rate_first);
     
     //if (DERIV_ID_(i_deriv) < 0) {
     //  i_deriv++;

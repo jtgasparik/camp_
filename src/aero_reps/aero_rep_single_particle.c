@@ -161,11 +161,11 @@ void aero_rep_single_particle_get_effective_layer_radius__m(
   double *curr_partial = NULL;
   int aero_phase_idx_temp = aero_phase_idx;
   aero_phase_idx_temp -= i_part * TOTAL_NUM_PHASES_;
-  
+
   int i_layer_radius = -1;
   for (int i_layer = 0; i_layer < NUM_LAYERS_; ++i_layer) {
-   if (LAYER_PHASE_START_(i_layer) <= aero_phase_idx_temp &&
-      aero_phase_idx_temp <= LAYER_PHASE_END_(i_layer)) {
+    if (LAYER_PHASE_START_(i_layer) <= aero_phase_idx_temp &&
+        aero_phase_idx_temp <= LAYER_PHASE_END_(i_layer)) {
       i_layer_radius = i_layer;
       break;
     }
@@ -176,9 +176,11 @@ void aero_rep_single_particle_get_effective_layer_radius__m(
   for (int i_layer = 0; i_layer <= i_layer_radius; ++i_layer) {
     for (int i_phase = 0; i_phase < NUM_PHASES_(i_layer); ++i_phase) {
       double *state = (double *)(model_data->grid_cell_state);
-      state += i_part * PARTICLE_STATE_SIZE_ + PHASE_STATE_ID_(i_layer,i_phase);
+      int phase_state_id = PHASE_STATE_ID_(i_layer,i_phase);
+      int phase_model_data_id = PHASE_MODEL_DATA_ID_(i_layer,i_phase);
+      state += i_part * PARTICLE_STATE_SIZE_ + phase_state_id;
       double volume;
-      aero_phase_get_volume__m3_m3(model_data, PHASE_MODEL_DATA_ID_(i_layer,i_phase),
+      aero_phase_get_volume__m3_m3(model_data, phase_model_data_id,
                                    state, &(volume), curr_partial);
       if (partial_deriv) curr_partial += PHASE_NUM_JAC_ELEM_(i_layer,i_phase);
       *layer_radius += volume;
@@ -368,7 +370,7 @@ void aero_rep_single_particle_get_interface_surface_area__m2(
   for (int i_layer = 0; i_layer < NUM_LAYERS_; ++i_layer) {
     for (int i_phase = 0; i_phase < NUM_PHASES_(i_layer); ++i_phase) {
       double *state = (double *)(model_data->grid_cell_state);
-      state += PARTICLE_STATE_SIZE_ + PHASE_STATE_ID_(i_layer,i_phase);
+      state += i_part *PARTICLE_STATE_SIZE_ + PHASE_STATE_ID_(i_layer,i_phase);
       double volume;
       aero_phase_get_volume__m3_m3(model_data, PHASE_MODEL_DATA_ID_(i_layer,i_phase),
                                    state, &(volume), curr_partial);
@@ -402,7 +404,7 @@ void aero_rep_single_particle_get_interface_surface_area__m2(
   for (int i_layer = 0; i_layer < NUM_LAYERS_; ++i_layer) {
     for (int i_phase = 0; i_phase < NUM_PHASES_(i_layer); ++i_phase) {
       double *state = (double *)(model_data->grid_cell_state);
-      state += PARTICLE_STATE_SIZE_ + PHASE_STATE_ID_(i_layer,i_phase);
+      state += i_part * PARTICLE_STATE_SIZE_ + PHASE_STATE_ID_(i_layer,i_phase);
       double volume_phase;
       aero_phase_get_volume__m3_m3(model_data, PHASE_MODEL_DATA_ID_(i_layer,i_phase),
                                        state, &(volume_phase), NULL);
@@ -488,24 +490,29 @@ void aero_rep_single_particle_get_layer_thickness__m(
   if (partial_deriv) {
       jac_inner = (double *)calloc(jac_size, sizeof(double));
       jac_outer = (double *)calloc(jac_size, sizeof(double));
+      if (jac_inner == NULL || jac_outer == NULL) {
+          printf("\n\nERROR: Memory allocation failed for jacobian arrays in ");
+          printf("aero_rep_single_particle_get_layer_thickness__m.\n\n");
+          exit(1);
+      }
   }
 
   int i_layer_inner = -1;
   int i_layer_outer = -1;
-  int i_phase_inner = -1;
-  int i_phase_outer = -1;
   for (int i_layer = 0; i_layer < NUM_LAYERS_; ++i_layer) {
    if (LAYER_PHASE_START_(i_layer) <= aero_phase_idx_temp &&
       aero_phase_idx_temp <= LAYER_PHASE_END_(i_layer)) {
       i_layer_outer = i_layer;
-      if (i_layer - 1 >= 0 ) {
-        i_layer_inner = i_layer - 1;
-      } else if (i_layer - 1 < 0 ) {
-        i_layer_inner = i_layer;
-      }
+      i_layer_inner = (i_layer > 0) ? (i_layer - 1) : i_layer;
+      break;
     }
   }
-  int offset = aero_phase_idx_temp - (i_part * LAYER_PHASE_START_(i_layer_outer));
+    if (i_layer_outer < 0) {
+    printf("ERROR: Could not determine layer for aero_phase_idx=%d (temp=%d)\n",
+           aero_phase_idx, aero_phase_idx_temp);
+    exit(1);
+  }
+  int offset = aero_phase_idx_temp - LAYER_PHASE_START_(i_layer_outer);
   int aero_phase_idx_inner = -1;
   if (i_layer_inner == i_layer_outer) {
     aero_phase_idx_inner = aero_phase_idx;

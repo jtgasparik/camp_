@@ -168,121 +168,121 @@ contains
       idx_prefix = "P1.one layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
       idx_solute_l1 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_solute_l1: ", idx_solute_l1
+      !print *, "idx_solute_l1: ", idx_solute_l1
       key = idx_prefix//"aqueous aerosol.H2O_aq"
       idx_H2O_l1 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_H2O_l1: ", idx_H2O_l1
+      !print *, "idx_H2O_l1: ", idx_H2O_l1
       idx_prefix = "P1.two layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
       idx_solute_l2 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_solute_l2: ", idx_solute_l2
+      !print *, "idx_solute_l2: ", idx_solute_l2
       key = idx_prefix//"aqueous aerosol.H2O_aq"
       idx_H2O_l2 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_H2O_l2: ", idx_H2O_l2
+      !print *, "idx_H2O_l2: ", idx_H2O_l2
       idx_prefix = "P1.three layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
       idx_solute_l3 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_solute_l3: ", idx_solute_l3
+      !print *, "idx_solute_l3: ", idx_solute_l3
       key = idx_prefix//"aqueous aerosol.H2O_aq"
       idx_H2O_l3 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_H2O_l3: ", idx_H2O_l3
+      !print *, "idx_H2O_l3: ", idx_H2O_l3
       idx_prefix = "P1.four layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
       idx_solute_l4 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_solute_l4: ", idx_solute_l4
+      !print *, "idx_solute_l4: ", idx_solute_l4
       key = idx_prefix//"aqueous aerosol.H2O_aq"
       idx_H2O_l4 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_H2O_l4: ", idx_H2O_l4
+      !print *, "idx_H2O_l4: ", idx_H2O_l4
 
       ! Get species indices
       idx_prefix = "P2.one layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
       idx_solute_l1 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_solute_l1: ", idx_solute_l1
+      !print *, "idx_solute_l1: ", idx_solute_l1
       key = idx_prefix//"aqueous aerosol.H2O_aq"
       idx_H2O_l1 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_H2O_l1: ", idx_H2O_l1
+      !print *, "idx_H2O_l1: ", idx_H2O_l1
       idx_prefix = "P2.two layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
       idx_solute_l2 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_solute_l2: ", idx_solute_l2
+      !print *, "idx_solute_l2: ", idx_solute_l2
       key = idx_prefix//"aqueous aerosol.H2O_aq"
       idx_H2O_l2 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_H2O_l2: ", idx_H2O_l2
+      !print *, "idx_H2O_l2: ", idx_H2O_l2
       idx_prefix = "P2.three layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
       idx_solute_l3 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_solute_l3: ", idx_solute_l3
+      !print *, "idx_solute_l3: ", idx_solute_l3
       key = idx_prefix//"aqueous aerosol.H2O_aq"
       idx_H2O_l3 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_H2O_l3: ", idx_H2O_l3
+      !print *, "idx_H2O_l3: ", idx_H2O_l3
       idx_prefix = "P2.four layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
       idx_solute_l4 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_solute_l4: ", idx_solute_l4
+      !print *, "idx_solute_l4: ", idx_solute_l4
       key = idx_prefix//"aqueous aerosol.H2O_aq"
       idx_H2O_l4 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_H2O_l4: ", idx_H2O_l4
+      !print *, "idx_H2O_l4: ", idx_H2O_l4
 
       ! Get species indices
       idx_prefix = "P3.one layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
       idx_solute_l1 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_solute_l1: ", idx_solute_l1
+      !print *, "idx_solute_l1: ", idx_solute_l1
       key = idx_prefix//"aqueous aerosol.H2O_aq"
       idx_H2O_l1 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_H2O_l1: ", idx_H2O_l1
+      !print *, "idx_H2O_l1: ", idx_H2O_l1
       idx_prefix = "P3.two layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
       idx_solute_l2 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_solute_l2: ", idx_solute_l2
+      !print *, "idx_solute_l2: ", idx_solute_l2
       key = idx_prefix//"aqueous aerosol.H2O_aq"
       idx_H2O_l2 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_H2O_l2: ", idx_H2O_l2
+      !print *, "idx_H2O_l2: ", idx_H2O_l2
       idx_prefix = "P3.three layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
       idx_solute_l3 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_solute_l3: ", idx_solute_l3
+      !print *, "idx_solute_l3: ", idx_solute_l3
       key = idx_prefix//"aqueous aerosol.H2O_aq"
       idx_H2O_l3 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_H2O_l3: ", idx_H2O_l3
+      !print *, "idx_H2O_l3: ", idx_H2O_l3
       idx_prefix = "P3.four layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
       idx_solute_l4 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_solute_l4: ", idx_solute_l4
+      !print *, "idx_solute_l4: ", idx_solute_l4
       key = idx_prefix//"aqueous aerosol.H2O_aq"
       idx_H2O_l4 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_H2O_l4: ", idx_H2O_l4
+      !print *, "idx_H2O_l4: ", idx_H2O_l4
 
       ! Get species indices
       idx_prefix = "P4.one layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
       idx_solute_l1 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_solute_l1: ", idx_solute_l1
+      !print *, "idx_solute_l1: ", idx_solute_l1
       key = idx_prefix//"aqueous aerosol.H2O_aq"
       idx_H2O_l1 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_H2O_l1: ", idx_H2O_l1
+      !print *, "idx_H2O_l1: ", idx_H2O_l1
       idx_prefix = "P4.two layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
       idx_solute_l2 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_solute_l2: ", idx_solute_l2
+      !print *, "idx_solute_l2: ", idx_solute_l2
       key = idx_prefix//"aqueous aerosol.H2O_aq"
       idx_H2O_l2 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_H2O_l2: ", idx_H2O_l2
+      !print *, "idx_H2O_l2: ", idx_H2O_l2
       idx_prefix = "P4.three layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
       idx_solute_l3 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_solute_l3: ", idx_solute_l3
+      !print *, "idx_solute_l3: ", idx_solute_l3
       key = idx_prefix//"aqueous aerosol.H2O_aq"
       idx_H2O_l3 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_H2O_l3: ", idx_H2O_l3
+      !print *, "idx_H2O_l3: ", idx_H2O_l3
       idx_prefix = "P4.four layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
       idx_solute_l4 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_solute_l4: ", idx_solute_l4
+      !print *, "idx_solute_l4: ", idx_solute_l4
       key = idx_prefix//"aqueous aerosol.H2O_aq"
       idx_H2O_l4 = aero_rep_ptr%spec_state_id(key);
-      print *, "idx_H2O_l4: ", idx_H2O_l4
+      !print *, "idx_H2O_l4: ", idx_H2O_l4
 
       ! Make sure the expected species are in the model
       call assert(050889938, idx_solute_l1.gt.0)
