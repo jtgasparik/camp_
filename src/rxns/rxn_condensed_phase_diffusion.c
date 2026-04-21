@@ -34,7 +34,7 @@
 #define PHASE_ID_SECOND_(x) (int_data[(NUM_INT_PROP_) + (NUM_ADJACENT_PAIRS_) + (x)]-1)
 #define AERO_REP_ID_(x) (int_data[(NUM_INT_PROP_) + (2*NUM_ADJACENT_PAIRS_) + (x)]-1)
 
-#define DERIV_ID_(x) (int_data[3*BLOCK_SIZE_ + x])
+#define DERIV_ID_(x) (int_data[(NUM_INT_PROP_) + (3*NUM_ADJACENT_PAIRS_) + (x)])
 //#define JAC_ID_(x) (int_data[4*BLOCK_SIZE_ + x]-1)
 //#define PHASE_INT_LOC_(x) (int_data[5*BLOCK_SIZE_ + x]-1)
 //#define PHASE_FLOAT_LOC_(x) (int_data[9*BLOCK_SIZE_ + x]-1)
@@ -140,10 +140,17 @@ void rxn_condensed_phase_diffusion_update_ids(ModelData *model_data, int *deriv_
   double *float_data = rxn_float_data;
 
   // Update the time derivative ids for adjacent condensed phase pairs
-  //for (int i_adj_pair = 0, i_deriv = 0; i_adj_pair < NUM_ADJACENT_PAIRS_; i_adj_pair++) {
-  //    DERIV_ID_(i_deriv++) = deriv_ids[PHASE_ID_FIRST_(i_adj_pair)];
-  //    DERIV_ID_(i_deriv++) = deriv_ids[PHASE_ID_SECOND_(i_adj_pair)];
-  //}
+  for (int i_adj_pair = 0, i_deriv = 0; i_adj_pair < NUM_ADJACENT_PAIRS_; i_adj_pair++) {
+      DERIV_ID_(i_deriv++) = deriv_ids[PHASE_ID_FIRST_(i_adj_pair)];
+  }
+  for (int i_adj_pair = 0, i_deriv = 0; i_adj_pair < NUM_ADJACENT_PAIRS_; i_adj_pair++) {
+      DERIV_ID_(i_deriv++) = deriv_ids[PHASE_ID_SECOND_(i_adj_pair)];
+  }
+  printf("Updated derivative ids for condensed phase diffusion reaction: ");
+  for (int i = 0; i < NUM_ADJACENT_PAIRS_ * 2; i++) {
+      printf("deriv id %d ", DERIV_ID_(i));
+  }
+  printf("\n");
 
 /*
   // Update the Jacobian ids
@@ -224,14 +231,14 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
   double *env_data = model_data->grid_cell_env;
 
   /* Debug: dump condensed int_data region used for phase ids */
-  {
+  //{
     //int nap = NUM_ADJACENT_PAIRS_;
     //int offset_base = NUM_INT_PROP_ + nap;
     //printf("DEBUG condensed int_data: NUM_ADJACENT_PAIRS_=%d offset_base=%d\n", nap, offset_base);
     //for (int ii = 0; ii < nap * 2 && ii < 64; ++ii) {
     //  printf("  int_data[%d]=%d\n", offset_base + ii, int_data[offset_base + ii]);
     //}
-  }
+  //}
 
   // Calculate derivative contributions for each aerosol phase
   for (int i_adj_pairs = 0, i_deriv = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; i_adj_pairs++) {
@@ -301,17 +308,33 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
                     * state[PHASE_ID_FIRST_(i_adj_pairs)] -
                     (DIFF_COEFF_SECOND_(i_adj_pairs) / layer_thickness_second)
                     * state[PHASE_ID_SECOND_(i_adj_pairs)]);
+    printf("  Layer thicknesses: %g, %g\n", layer_thickness_first, layer_thickness_second);
+    printf("  Interface surface area: %g\n", eff_sa);
+    printf("  Phase volumes: %g, %g\n", volume_phase_first, volume_phase_second);
+    printf("  Rate constants: %g, %g\n", eff_sa / volume_phase_first, eff_sa / volume_phase_second);
+    printf("  Calculated rates: %g, %g\n", rate_first, rate_second);
+    printf("DERIV_IDs: %d %d\n",
+       DERIV_ID_(i_adj_pairs),
+       DERIV_ID_(i_adj_pairs + NUM_ADJACENT_PAIRS_));
     
-    //if (DERIV_ID_(i_deriv) < 0) {
-    //  i_deriv++;
-    //  continue;
+    // Add to time derivative
+    //if (DERIV_ID_(i_adj_pairs) >= 0) {
+    //  time_derivative_add_value(time_deriv,
+    //                            DERIV_ID_(i_adj_pairs),
+    //                            rate_first);
     //}
-    //time_derivative_add_value(time_deriv, DERIV_ID_(i_deriv++),
-    //                          rate_first);
-    //time_derivative_add_value(time_deriv, DERIV_ID_(i_deriv++),
-    //                          rate_second);
-  }
 
+    //if (DERIV_ID_(i_adj_pairs + NUM_ADJACENT_PAIRS_) >= 0) {
+    //  time_derivative_add_value(time_deriv,
+    //                            DERIV_ID_(i_adj_pairs + NUM_ADJACENT_PAIRS_),
+    //                            rate_second);
+   // }
+
+  }
+  printf("Updated derivative ids for condensed phase diffusion reaction: ");
+  for (int i = 0; i < NUM_ADJACENT_PAIRS_ * 2; i++) {
+    printf("updated deriv id %d ", DERIV_ID_(i));
+  }
   return;
 }
 #endif
