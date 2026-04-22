@@ -91,11 +91,16 @@ contains
     class(aero_rep_data_t), pointer :: aero_rep_ptr
     integer(kind=i_kind) :: num_state_var, state_size
     real(kind=dp), allocatable, dimension(:,:) :: model_conc, true_conc
-    integer(kind=i_kind) :: idx_solute_l1, idx_solute_l2, idx_solute_l3, &
-            idx_solute_l4, idx_H2O_l1, idx_H2O_l2, idx_H2O_l3, idx_H2O_l4, &
+    integer(kind=i_kind) :: idx_solute_l1_p1, idx_solute_l2_p1, idx_solute_l3_p1, &
+            idx_solute_l4_p1, idx_H2O_l1_p1, idx_H2O_l2_p1, idx_H2O_l3_p1, idx_H2O_l4_p1, &
             i_time, i_spec, i
-    real(kind=dp) :: time_step, time, conc_solute_l1, conc_solute_l2, conc_solutel3, &
-         conc_solute_l4, conc_water, MW_solute, D_solute
+    integer(kind=i_kind) :: idx_solute_l1_p2, idx_solute_l2_p2, idx_solute_l3_p2, &
+            idx_solute_l4_p2, idx_H2O_l1_p2, idx_H2O_l2_p2, idx_H2O_l3_p2, idx_H2O_l4_p2
+    integer(kind=i_kind) :: idx_solute_l1_p3, idx_solute_l2_p3, idx_solute_l3_p3, &
+            idx_solute_l4_p3, idx_H2O_l1_p3, idx_H2O_l2_p3, idx_H2O_l3_p3, idx_H2O_l4_p3
+    integer(kind=i_kind) :: idx_solute_l1_p4, idx_solute_l2_p4, idx_solute_l3_p4, &
+            idx_solute_l4_p4, idx_H2O_l1_p4, idx_H2O_l2_p4, idx_H2O_l3_p4, idx_H2O_l4_p4
+    real(kind=dp) :: time_step, time, conc_water, MW_solute, D_solute
 #ifdef CAMP_USE_MPI
     character, allocatable :: buffer(:), buffer_copy(:)
     integer(kind=i_kind) :: pack_size, pos, i_elem, results, rank_1_results
@@ -130,7 +135,7 @@ contains
     ! Set the rate constants (for calculating the true values)
     MW_solute = 0.058 ! molecular weight of solute (kg/mol)
     D_solute = 1.5e-5 ! diffusion coeff of solute in condensed phase (m2/s)
-    conc_water = 2.3d0
+    conc_water = 2.3d-2 ! molar concentration of water in the condensed phase (mol/m3)
     !!! JJJ: Where is the size of the particle specified???
 
     ! Set output time step (s)
@@ -167,124 +172,160 @@ contains
       ! Get species indices
       idx_prefix = "P1.one layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
-      idx_solute_l1 = aero_rep_ptr%spec_state_id(key);
+      idx_solute_l1_p1 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_solute_l1_p1: ", idx_solute_l1_p1
+
       key = idx_prefix//"aqueous aerosol.H2O_aq"
-      idx_H2O_l1 = aero_rep_ptr%spec_state_id(key);
+      idx_H2O_l1_p1 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_H2O_l1_p1: ", idx_H2O_l1_p1
+
       idx_prefix = "P1.two layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
-      idx_solute_l2 = aero_rep_ptr%spec_state_id(key);
+      idx_solute_l2_p1 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_solute_l2_p1: ", idx_solute_l2_p1
+
       key = idx_prefix//"aqueous aerosol.H2O_aq"
-      idx_H2O_l2 = aero_rep_ptr%spec_state_id(key);
+      idx_H2O_l2_p1 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_H2O_l2_p1: ", idx_H2O_l2_p1
+
       idx_prefix = "P1.three layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
-      idx_solute_l3 = aero_rep_ptr%spec_state_id(key);
+      idx_solute_l3_p1 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_solute_l3_p1: ", idx_solute_l3_p1
+
       key = idx_prefix//"aqueous aerosol.H2O_aq"
-      idx_H2O_l3 = aero_rep_ptr%spec_state_id(key);
+      idx_H2O_l3_p1 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_H2O_l3_p1: ", idx_H2O_l3_p1
+
       idx_prefix = "P1.four layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
-      idx_solute_l4 = aero_rep_ptr%spec_state_id(key);
+      idx_solute_l4_p1 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_solute_l4_p1: ", idx_solute_l4_p1
+
       key = idx_prefix//"aqueous aerosol.H2O_aq"
-      idx_H2O_l4 = aero_rep_ptr%spec_state_id(key);
+      idx_H2O_l4_p1 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_H2O_l4_p1: ", idx_H2O_l4_p1
 
       ! Get species indices
       idx_prefix = "P2.one layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
-      idx_solute_l1 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_solute_l1: ", idx_solute_l1
+      idx_solute_l1_p2 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_solute_l1_p2: ", idx_solute_l1_p2
+
       key = idx_prefix//"aqueous aerosol.H2O_aq"
-      idx_H2O_l1 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_H2O_l1: ", idx_H2O_l1
+      idx_H2O_l1_p2 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_H2O_l1_p2: ", idx_H2O_l1_p2
+
       idx_prefix = "P2.two layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
-      idx_solute_l2 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_solute_l2: ", idx_solute_l2
+      idx_solute_l2_p2 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_solute_l2_p2: ", idx_solute_l2_p2
+
       key = idx_prefix//"aqueous aerosol.H2O_aq"
-      idx_H2O_l2 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_H2O_l2: ", idx_H2O_l2
+      idx_H2O_l2_p2 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_H2O_l2_p2: ", idx_H2O_l2_p2
+
       idx_prefix = "P2.three layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
-      idx_solute_l3 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_solute_l3: ", idx_solute_l3
+      idx_solute_l3_p2 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_solute_l3_p2: ", idx_solute_l3_p2
+
       key = idx_prefix//"aqueous aerosol.H2O_aq"
-      idx_H2O_l3 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_H2O_l3: ", idx_H2O_l3
+      idx_H2O_l3_p2 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_H2O_l3_p2: ", idx_H2O_l3_p2
+
       idx_prefix = "P2.four layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
-      idx_solute_l4 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_solute_l4: ", idx_solute_l4
+      idx_solute_l4_p2 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_solute_l4_p2: ", idx_solute_l4_p2
+
       key = idx_prefix//"aqueous aerosol.H2O_aq"
-      idx_H2O_l4 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_H2O_l4: ", idx_H2O_l4
+      idx_H2O_l4_p2 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_H2O_l4_p2: ", idx_H2O_l4_p2
 
       ! Get species indices
       idx_prefix = "P3.one layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
-      idx_solute_l1 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_solute_l1: ", idx_solute_l1
+      idx_solute_l1_p3 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_solute_l1_p3: ", idx_solute_l1_p3
+
       key = idx_prefix//"aqueous aerosol.H2O_aq"
-      idx_H2O_l1 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_H2O_l1: ", idx_H2O_l1
+      idx_H2O_l1_p3 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_H2O_l1_p3: ", idx_H2O_l1_p3
+
       idx_prefix = "P3.two layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
-      idx_solute_l2 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_solute_l2: ", idx_solute_l2
+      idx_solute_l2_p3 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_solute_l2_p3: ", idx_solute_l2_p3
+
       key = idx_prefix//"aqueous aerosol.H2O_aq"
-      idx_H2O_l2 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_H2O_l2: ", idx_H2O_l2
+      idx_H2O_l2_p3 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_H2O_l2_p3: ", idx_H2O_l2_p3
+
       idx_prefix = "P3.three layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
-      idx_solute_l3 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_solute_l3: ", idx_solute_l3
+      idx_solute_l3_p3 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_solute_l3_p3: ", idx_solute_l3_p3
+
       key = idx_prefix//"aqueous aerosol.H2O_aq"
-      idx_H2O_l3 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_H2O_l3: ", idx_H2O_l3
+      idx_H2O_l3_p3 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_H2O_l3_p3: ", idx_H2O_l3_p3
+
       idx_prefix = "P3.four layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
-      idx_solute_l4 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_solute_l4: ", idx_solute_l4
+      idx_solute_l4_p3 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_solute_l4_p3: ", idx_solute_l4_p3
+
       key = idx_prefix//"aqueous aerosol.H2O_aq"
-      idx_H2O_l4 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_H2O_l4: ", idx_H2O_l4
+      idx_H2O_l4_p3 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_H2O_l4_p3: ", idx_H2O_l4_p3 
 
       ! Get species indices
       idx_prefix = "P4.one layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
-      idx_solute_l1 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_solute_l1: ", idx_solute_l1
+      idx_solute_l1_p4 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_solute_l1_p4: ", idx_solute_l1_p4
+
       key = idx_prefix//"aqueous aerosol.H2O_aq"
-      idx_H2O_l1 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_H2O_l1: ", idx_H2O_l1
+      idx_H2O_l1_p4 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_H2O_l1_p4: ", idx_H2O_l1_p4 
+
       idx_prefix = "P4.two layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
-      idx_solute_l2 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_solute_l2: ", idx_solute_l2
+      idx_solute_l2_p4 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_solute_l2_p4: ", idx_solute_l2_p4
+
       key = idx_prefix//"aqueous aerosol.H2O_aq"
-      idx_H2O_l2 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_H2O_l2: ", idx_H2O_l2
+      idx_H2O_l2_p4 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_H2O_l2_p4: ", idx_H2O_l2_p4
+
       idx_prefix = "P4.three layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
-      idx_solute_l3 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_solute_l3: ", idx_solute_l3
+      idx_solute_l3_p4 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_solute_l3_p4: ", idx_solute_l3_p4
+
       key = idx_prefix//"aqueous aerosol.H2O_aq"
-      idx_H2O_l3 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_H2O_l3: ", idx_H2O_l3
+      idx_H2O_l3_p4 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_H2O_l3_p4: ", idx_H2O_l3_p4
+
       idx_prefix = "P4.four layer."
       key = idx_prefix//"aqueous aerosol.solute_aq"
-      idx_solute_l4 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_solute_l4: ", idx_solute_l4
+      idx_solute_l4_p4 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_solute_l4_p4: ", idx_solute_l4_p4
+
       key = idx_prefix//"aqueous aerosol.H2O_aq"
-      idx_H2O_l4 = aero_rep_ptr%spec_state_id(key);
-      !print *, "idx_H2O_l4: ", idx_H2O_l4
+      idx_H2O_l4_p4 = aero_rep_ptr%spec_state_id(key);
+      print *, "idx_H2O_l4_p4: ", idx_H2O_l4_p4
 
       ! Make sure the expected species are in the model
-      call assert(050889938, idx_solute_l1.gt.0)
-      call assert(599205790, idx_solute_l2.gt.0)
-      call assert(434244152, idx_solute_l3.gt.0)
-      call assert(260481458, idx_solute_l4.gt.0)
-      call assert(149096792, idx_H2O_l1.gt.0)
-      call assert(011666208, idx_H2O_l2.gt.0)
-      call assert(465533442, idx_H2O_l3.gt.0)
-      call assert(250659956, idx_H2O_l4.gt.0)
+      call assert(050889938, idx_solute_l1_p1.gt.0)
+      call assert(599205790, idx_solute_l2_p1.gt.0)
+      call assert(434244152, idx_solute_l3_p1.gt.0)
+      call assert(260481458, idx_solute_l4_p1.gt.0)
+      call assert(149096792, idx_H2O_l1_p1.gt.0)
+      call assert(011666208, idx_H2O_l2_p1.gt.0)
+      call assert(465533442, idx_H2O_l3_p1.gt.0)
+      call assert(250659956, idx_H2O_l4_p1.gt.0)
 
 #ifdef CAMP_USE_MPI
       ! pack the camp core
@@ -299,14 +340,14 @@ contains
     end if
 
     ! broadcast the species ids
-    call camp_mpi_bcast_integer(idx_solute_l1)
-    call camp_mpi_bcast_integer(idx_solute_l2)
-    call camp_mpi_bcast_integer(idx_solute_l3)
-    call camp_mpi_bcast_integer(idx_solute_l4)
-    call camp_mpi_bcast_integer(idx_H2O_l1)
-    call camp_mpi_bcast_integer(idx_H2O_l2)
-    call camp_mpi_bcast_integer(idx_H2O_l3)
-    call camp_mpi_bcast_integer(idx_H2O_l4)
+    call camp_mpi_bcast_integer(idx_solute_l1_p1)
+    call camp_mpi_bcast_integer(idx_solute_l2_p1)
+    call camp_mpi_bcast_integer(idx_solute_l3_p1)
+    call camp_mpi_bcast_integer(idx_solute_l4_p1)
+    call camp_mpi_bcast_integer(idx_H2O_l1_p1)
+    call camp_mpi_bcast_integer(idx_H2O_l2_p1)
+    call camp_mpi_bcast_integer(idx_H2O_l3_p1)
+    call camp_mpi_bcast_integer(idx_H2O_l4_p1)
 
     ! broadcast the buffer size
     call camp_mpi_bcast_integer(pack_size)
@@ -352,14 +393,38 @@ contains
 
       ! Save the initial concentrations
       true_conc(:,:) = 0.0
-      true_conc(0,idx_solute_l1) = 1.0e25
-      true_conc(0,idx_solute_l2) = 0.0
-      true_conc(0,idx_solute_l3) = 0.0
-      true_conc(0,idx_solute_l4) = 0.0
-      true_conc(:,idx_H2O_l1) = conc_water
-      true_conc(:,idx_H2O_l2) = conc_water
-      true_conc(:,idx_H2O_l3) = conc_water
-      true_conc(:,idx_H2O_l4) = conc_water
+      true_conc(0,idx_solute_l1_p1) = 1.0e-8
+      true_conc(0,idx_solute_l2_p1) = 0.0
+      true_conc(0,idx_solute_l3_p1) = 0.0
+      true_conc(0,idx_solute_l4_p1) = 0.0
+      true_conc(:,idx_H2O_l1_p1) = conc_water
+      true_conc(:,idx_H2O_l2_p1) = conc_water
+      true_conc(:,idx_H2O_l3_p1) = conc_water
+      true_conc(:,idx_H2O_l4_p1) = conc_water
+      true_conc(0,idx_solute_l1_p2) = 1.0e-8
+      true_conc(0,idx_solute_l2_p2) = 0.0
+      true_conc(0,idx_solute_l3_p2) = 0.0
+      true_conc(0,idx_solute_l4_p2) = 0.0
+      true_conc(:,idx_H2O_l1_p2) = conc_water
+      true_conc(:,idx_H2O_l2_p2) = conc_water
+      true_conc(:,idx_H2O_l3_p2) = conc_water
+      true_conc(:,idx_H2O_l4_p2) = conc_water
+      true_conc(0,idx_solute_l1_p3) = 1.0e-8
+      true_conc(0,idx_solute_l2_p3) = 0.0
+      true_conc(0,idx_solute_l3_p3) = 0.0
+      true_conc(0,idx_solute_l4_p3) = 0.0
+      true_conc(:,idx_H2O_l1_p3) = conc_water
+      true_conc(:,idx_H2O_l2_p3) = conc_water
+      true_conc(:,idx_H2O_l3_p3) = conc_water
+      true_conc(:,idx_H2O_l4_p3) = conc_water
+      true_conc(0,idx_solute_l1_p4) = 1.0e-8
+      true_conc(0,idx_solute_l2_p4) = 0.0
+      true_conc(0,idx_solute_l3_p4) = 0.0
+      true_conc(0,idx_solute_l4_p4) = 0.0
+      true_conc(:,idx_H2O_l1_p4) = conc_water
+      true_conc(:,idx_H2O_l2_p4) = conc_water
+      true_conc(:,idx_H2O_l3_p4) = conc_water
+      true_conc(:,idx_H2O_l4_p4) = conc_water
       model_conc(0,:) = true_conc(0,:)
       number_conc = 1.3e6         ! particle number concentration (#/cc)
 
@@ -369,6 +434,7 @@ contains
 
       ! Set the initial state in the model
       camp_state%state_var(:) = model_conc(0,:)
+      print *, "Initial state_var values (first 10):", camp_state%state_var(13:min(44, size(camp_state%state_var)))
 
 #ifdef CAMP_DEBUG
       ! Evaluate the Jacobian during solving
@@ -382,7 +448,9 @@ contains
         call camp_core%solve(camp_state, time_step, &
                               solver_stats = solver_stats)
         model_conc(i_time,:) = camp_state%state_var(:)
-
+        if (i_time <= 3) then
+          print *, "state_var after step", i_time, ":", camp_state%state_var(13:min(44, size(camp_state%state_var)))
+        end if
       end do
 
 #ifdef CAMP_DEBUG

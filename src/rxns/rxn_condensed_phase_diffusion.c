@@ -143,7 +143,7 @@ void rxn_condensed_phase_diffusion_update_ids(ModelData *model_data, int *deriv_
   for (int i_adj_pair = 0, i_deriv = 0; i_adj_pair < NUM_ADJACENT_PAIRS_; i_adj_pair++) {
       DERIV_ID_(i_deriv++) = deriv_ids[PHASE_ID_FIRST_(i_adj_pair)];
   }
-  for (int i_adj_pair = 0, i_deriv = 0; i_adj_pair < NUM_ADJACENT_PAIRS_; i_adj_pair++) {
+  for (int i_adj_pair = 0, i_deriv = NUM_ADJACENT_PAIRS_; i_adj_pair < NUM_ADJACENT_PAIRS_; i_adj_pair++) {
       DERIV_ID_(i_deriv++) = deriv_ids[PHASE_ID_SECOND_(i_adj_pair)];
   }
   printf("Updated derivative ids for condensed phase diffusion reaction: ");
@@ -250,7 +250,6 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
 
     /* Get the layer thickness for first phase id (m) */
     realtype layer_thickness_first;
-
     aero_rep_get_layer_thickness__m(
       model_data, //model data 
       AERO_REP_ID_(i_adj_pairs), // aerosol representation index
