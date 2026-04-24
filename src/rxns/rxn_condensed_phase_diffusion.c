@@ -246,7 +246,6 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
     printf("  Phase ids: %d, %d\n", PHASE_ID_FIRST_(i_adj_pairs), PHASE_ID_SECOND_(i_adj_pairs));
     printf("  Diffusion coefficients: %g, %g\n", DIFF_COEFF_FIRST_(i_adj_pairs), DIFF_COEFF_SECOND_(i_adj_pairs));
     printf("  Aerosol representation id: %d\n", AERO_REP_ID_(i_adj_pairs));
-    printf("  State values: %g, %g\n", state[PHASE_ID_FIRST_(i_adj_pairs)], state[PHASE_ID_SECOND_(i_adj_pairs)]);
 
     /* Get the layer thickness for first phase id (m) */
     realtype layer_thickness_first;
@@ -308,6 +307,7 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
                     (DIFF_COEFF_SECOND_(i_adj_pairs) / layer_thickness_second)
                     * state[PHASE_ID_SECOND_(i_adj_pairs)]);
     printf("  Layer thicknesses: %g, %g\n", layer_thickness_first, layer_thickness_second);
+    printf("  State values: %g, %g\n", state[PHASE_ID_FIRST_(i_adj_pairs)], state[PHASE_ID_SECOND_(i_adj_pairs)]);
     printf("  Interface surface area: %g\n", eff_sa);
     printf("  Phase volumes: %g, %g\n", volume_phase_first, volume_phase_second);
     printf("  Rate constants: %g, %g\n", eff_sa / volume_phase_first, eff_sa / volume_phase_second);

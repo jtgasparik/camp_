@@ -393,7 +393,7 @@ contains
 
       ! Save the initial concentrations
       true_conc(:,:) = 0.0
-      true_conc(0,idx_solute_l1_p1) = 1.0e-8
+      true_conc(0,idx_solute_l1_p1) = 1.0e-2
       true_conc(0,idx_solute_l2_p1) = 0.0
       true_conc(0,idx_solute_l3_p1) = 0.0
       true_conc(0,idx_solute_l4_p1) = 0.0
@@ -401,7 +401,7 @@ contains
       true_conc(:,idx_H2O_l2_p1) = conc_water
       true_conc(:,idx_H2O_l3_p1) = conc_water
       true_conc(:,idx_H2O_l4_p1) = conc_water
-      true_conc(0,idx_solute_l1_p2) = 1.0e-8
+      true_conc(0,idx_solute_l1_p2) = 1.0e-2
       true_conc(0,idx_solute_l2_p2) = 0.0
       true_conc(0,idx_solute_l3_p2) = 0.0
       true_conc(0,idx_solute_l4_p2) = 0.0
@@ -409,7 +409,7 @@ contains
       true_conc(:,idx_H2O_l2_p2) = conc_water
       true_conc(:,idx_H2O_l3_p2) = conc_water
       true_conc(:,idx_H2O_l4_p2) = conc_water
-      true_conc(0,idx_solute_l1_p3) = 1.0e-8
+      true_conc(0,idx_solute_l1_p3) = 1.0e-2
       true_conc(0,idx_solute_l2_p3) = 0.0
       true_conc(0,idx_solute_l3_p3) = 0.0
       true_conc(0,idx_solute_l4_p3) = 0.0
@@ -417,7 +417,7 @@ contains
       true_conc(:,idx_H2O_l2_p3) = conc_water
       true_conc(:,idx_H2O_l3_p3) = conc_water
       true_conc(:,idx_H2O_l4_p3) = conc_water
-      true_conc(0,idx_solute_l1_p4) = 1.0e-8
+      true_conc(0,idx_solute_l1_p4) = 1.0e-2
       true_conc(0,idx_solute_l2_p4) = 0.0
       true_conc(0,idx_solute_l3_p4) = 0.0
       true_conc(0,idx_solute_l4_p4) = 0.0
@@ -425,8 +425,9 @@ contains
       true_conc(:,idx_H2O_l2_p4) = conc_water
       true_conc(:,idx_H2O_l3_p4) = conc_water
       true_conc(:,idx_H2O_l4_p4) = conc_water
-      model_conc(0,:) = true_conc(0,:)
       number_conc = 1.3e6         ! particle number concentration (#/cc)
+      true_conc(0,:) = true_conc(0,:) / number_conc
+      model_conc(0,:) = true_conc(0,:)
 
       ! Update the aerosol representation (single particle only)
       call number_update%set_number__n_m3(1, number_conc)
