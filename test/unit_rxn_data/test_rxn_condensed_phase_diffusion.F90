@@ -435,7 +435,7 @@ contains
 
       ! Set the initial state in the model
       camp_state%state_var(:) = model_conc(0,:)
-      print *, "Initial state_var values (first 10):", camp_state%state_var(13:min(44, size(camp_state%state_var)))
+      !print *, "Initial state_var values (first 10):", camp_state%state_var(13:min(44, size(camp_state%state_var)))
 
 #ifdef CAMP_DEBUG
       ! Evaluate the Jacobian during solving
@@ -449,9 +449,9 @@ contains
         call camp_core%solve(camp_state, time_step, &
                               solver_stats = solver_stats)
         model_conc(i_time,:) = camp_state%state_var(:)
-        if (i_time <= 3) then
-          print *, "state_var after step", i_time, ":", camp_state%state_var(13:min(44, size(camp_state%state_var)))
-        end if
+        !if (i_time <= 3) then
+        !  print *, "state_var after step", i_time, ":", camp_state%state_var(13:min(44, size(camp_state%state_var)))
+        !end if
       end do
 
 #ifdef CAMP_DEBUG
