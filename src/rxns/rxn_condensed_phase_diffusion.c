@@ -26,6 +26,8 @@
 #define NUM_INT_PROP_ 1
 #define NUM_FLOAT_PROP_ 0
 #define NUM_ENV_PARAM_ 0
+#define JAC_INNER_ROW 0
+#define JAC_OUTER_ROW 1
 
 #define DIFF_COEFF_INNER_(x) (float_data[(NUM_FLOAT_PROP_) + (x)])
 #define DIFF_COEFF_OUTER_(x) (float_data[(NUM_FLOAT_PROP_) + (NUM_ADJACENT_PAIRS_) + (x)])
@@ -37,14 +39,55 @@
 
 #define DERIV_ID_INNER_(x) (int_data[(NUM_INT_PROP_) + (5*NUM_ADJACENT_PAIRS_) + (x)])
 #define DERIV_ID_OUTER_(x) (int_data[(NUM_INT_PROP_) + (6*NUM_ADJACENT_PAIRS_) + (x)])
-//#define JAC_ID_(x) (int_data[4*BLOCK_SIZE_ + x]-1)
-//#define PHASE_INT_LOC_(x) (int_data[5*BLOCK_SIZE_ + x]-1)
-//#define PHASE_FLOAT_LOC_(x) (int_data[9*BLOCK_SIZE_ + x]-1)
-//#define NUM_AERO_PHASE_JAC_ELEM_INNER_(x) (int_data[10*BLOCK_SIZE + x]-1)
-//#define NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) (int_data[11*BLOCK_SIZE + x]-1)
-//#define PHASE_JAC_ID_(x) (int_data[12*BLOCK_SIZE + x]-1)
-//#define NUM_CONC_JAC_ELEM_(x) (int_data[13*BLOCK_SIZE + x]-1)
-//#define MASS_JAC_ELEM_(x) (int_data[14*BLOCK_SIZE + x]-1)
+#define JAC_ID_INNER_INNER_(x) \
+  int_data[(NUM_INT_PROP_) + 7 * (NUM_ADJACENT_PAIRS_) + (x)]
+#define JAC_ID_INNER_OUTER_(x) \
+  int_data[(NUM_INT_PROP_) + 8 * (NUM_ADJACENT_PAIRS_) + (x)]
+#define JAC_ID_OUTER_INNER_(x) \
+  int_data[(NUM_INT_PROP_) + 9 * (NUM_ADJACENT_PAIRS_) + (x)]
+#define JAC_ID_OUTER_OUTER_(x) \
+  int_data[(NUM_INT_PROP_) + 10 * (NUM_ADJACENT_PAIRS_) + (x)]
+
+/* Per-pair offsets into variable-length Jacobian dependency bookkeeping */
+#define PHASE_INT_LOC_(x) \
+  (int_data[(NUM_INT_PROP_) + 11 * (NUM_ADJACENT_PAIRS_) + (x)] - 1)
+#define PHASE_FLOAT_LOC_(x) \
+  (int_data[(NUM_INT_PROP_) + 12 * (NUM_ADJACENT_PAIRS_) + (x)] - 1)
+
+/*
+ * Integer sub-block layout at PHASE_INT_LOC_(x):
+ *   [0] = number of flagged dependency variables for this pair
+ *   [1 ... n] = dependency slots for inner-row Jacobian terms
+ *   [1 + n ... 1 + 2n - 1] = dependency slots for outer-row Jacobian terms
+ */
+#define NUM_AERO_PHASE_JAC_ELEM_(x) \
+  int_data[PHASE_INT_LOC_(x)]
+
+#define PHASE_JAC_ID_(x, row, e) \
+  int_data[PHASE_INT_LOC_(x) + 1 + (row) * NUM_AERO_PHASE_JAC_ELEM_(x) + (e)]
+
+/*
+ * Float sub-block layout at PHASE_FLOAT_LOC_(x):
+ *   [0 ... n-1] = d(layer_thickness_inner)/dy
+ *   [n ... 2n-1] = d(layer_thickness_outer)/dy
+ *   [2n ... 3n-1] = d(interface_surface_area)/dy
+ *   [3n ... 4n-1] = d(phase_volume_inner)/dy
+ *   [4n ... 5n-1] = d(phase_volume_outer)/dy
+ */
+#define LAYER_THICKNESS_INNER_JAC_ELEM_(x, e) \
+  float_data[PHASE_FLOAT_LOC_(x) + (e)]
+
+#define LAYER_THICKNESS_OUTER_JAC_ELEM_(x, e) \
+  float_data[PHASE_FLOAT_LOC_(x) + NUM_AERO_PHASE_JAC_ELEM_(x) + (e)]
+
+#define INTERFACE_SURFACE_AREA_JAC_ELEM_(x, e) \
+  float_data[PHASE_FLOAT_LOC_(x) + 2 * NUM_AERO_PHASE_JAC_ELEM_(x) + (e)]
+
+#define PHASE_VOLUME_INNER_JAC_ELEM_(x, e) \
+  float_data[PHASE_FLOAT_LOC_(x) + 3 * NUM_AERO_PHASE_JAC_ELEM_(x) + (e)]
+
+#define PHASE_VOLUME_OUTER_JAC_ELEM_(x, e) \
+  float_data[PHASE_FLOAT_LOC_(x) + 4 * NUM_AERO_PHASE_JAC_ELEM_(x) + (e)]
 
 /** \brief Flag Jacobian elements used by this reaction
  *
