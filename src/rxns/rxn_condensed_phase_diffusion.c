@@ -33,61 +33,37 @@
 #define DIFF_COEFF_OUTER_(x) (float_data[(NUM_FLOAT_PROP_) + (NUM_ADJACENT_PAIRS_) + (x)])
 #define PHASE_ID_INNER_(x) (int_data[(NUM_INT_PROP_) + (x)]-1)
 #define PHASE_ID_OUTER_(x) (int_data[(NUM_INT_PROP_) + (NUM_ADJACENT_PAIRS_) + (x)]-1)
-#define AERO_SPEC_INNER_(x) (int_data[(NUM_INT_PROP_) + (2*NUM_ADJACENT_PAIRS_) + (x)]-1)
-#define AERO_SPEC_OUTER_(x) (int_data[(NUM_INT_PROP_) + (3*NUM_ADJACENT_PAIRS_) + (x)]-1)
-#define AERO_REP_ID_(x) (int_data[(NUM_INT_PROP_) + (4*NUM_ADJACENT_PAIRS_) + (x)]-1)
+#define NUM_AERO_PHASE_JAC_ELEM_INNER_(x) (int_data[(NUM_INT_PROP_) + (2*NUM_ADJACENT_PAIRS_) + (x)])
+#define NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) (int_data[(NUM_INT_PROP_) + (3*NUM_ADJACENT_PAIRS_) + (x)])
+#define NUM_AERO_PHASE_JAC_ELEM_(x) (int_data[(NUM_INT_PROP_) + (4*NUM_ADJACENT_PAIRS_) + (x)])
+#define AERO_SPEC_INNER_(x) (int_data[(NUM_INT_PROP_) + (5*NUM_ADJACENT_PAIRS_) + (x)]-1)
+#define AERO_SPEC_OUTER_(x) (int_data[(NUM_INT_PROP_) + (6*NUM_ADJACENT_PAIRS_) + (x)]-1)
+#define AERO_REP_ID_(x) (int_data[(NUM_INT_PROP_) + (7*NUM_ADJACENT_PAIRS_) + (x)]-1)
 
-#define DERIV_ID_INNER_(x) (int_data[(NUM_INT_PROP_) + (5*NUM_ADJACENT_PAIRS_) + (x)])
-#define DERIV_ID_OUTER_(x) (int_data[(NUM_INT_PROP_) + (6*NUM_ADJACENT_PAIRS_) + (x)])
-#define JAC_ID_INNER_INNER_(x) \
-  int_data[(NUM_INT_PROP_) + 7 * (NUM_ADJACENT_PAIRS_) + (x)]
-#define JAC_ID_INNER_OUTER_(x) \
-  int_data[(NUM_INT_PROP_) + 8 * (NUM_ADJACENT_PAIRS_) + (x)]
-#define JAC_ID_OUTER_INNER_(x) \
-  int_data[(NUM_INT_PROP_) + 9 * (NUM_ADJACENT_PAIRS_) + (x)]
-#define JAC_ID_OUTER_OUTER_(x) \
+#define DERIV_ID_INNER_(x) (int_data[(NUM_INT_PROP_) + (8*NUM_ADJACENT_PAIRS_) + (x)])
+#define DERIV_ID_OUTER_(x) (int_data[(NUM_INT_PROP_) + (9*NUM_ADJACENT_PAIRS_) + (x)])
+#define JAC_ID_INNER_(x) \
   int_data[(NUM_INT_PROP_) + 10 * (NUM_ADJACENT_PAIRS_) + (x)]
+#define JAC_ID_OUTER_(x) \
+  int_data[(NUM_INT_PROP_) + 11 * (NUM_ADJACENT_PAIRS_) + (x)]
 
-/* Per-pair offsets into variable-length Jacobian dependency bookkeeping */
-#define PHASE_INT_LOC_(x) \
-  (int_data[(NUM_INT_PROP_) + 11 * (NUM_ADJACENT_PAIRS_) + (x)] - 1)
-#define PHASE_FLOAT_LOC_(x) \
-  (int_data[(NUM_INT_PROP_) + 12 * (NUM_ADJACENT_PAIRS_) + (x)] - 1)
+#define LAYER_THICKNESS_JAC_ELEM_INNER_(x,e) \
+  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + \
+              NUM_AERO_PHASE_JAC_ELEM_(x) + (e)])
+#define LAYER_THICKNESS_JAC_ELEM_OUTER_(x,e) \
+  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + NUM_AERO_PHASE_JAC_ELEM_(x) + \
+              NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (e)])
+#define PHASE_VOLUME_JAC_ELEM_INNER_(x,e) \
+  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + \
+              NUM_AERO_PHASE_JAC_ELEM_(x) + (e)])
+#define PHASE_VOLUME_JAC_ELEM_OUTER_(x,e) \
+  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + NUM_AERO_PHASE_JAC_ELEM_(x) + \
+              NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (e)])
+#define INTERFACE_SURFACE_AREA_JAC_ELEM_(x,e) \
+  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + \
+              NUM_AERO_PHASE_JAC_ELEM_(x) + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + \
+              NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) + (e)])
 
-/*
- * Integer sub-block layout at PHASE_INT_LOC_(x):
- *   [0] = number of flagged dependency variables for this pair
- *   [1 ... n] = dependency slots for inner-row Jacobian terms
- *   [1 + n ... 1 + 2n - 1] = dependency slots for outer-row Jacobian terms
- */
-#define NUM_AERO_PHASE_JAC_ELEM_(x) \
-  int_data[PHASE_INT_LOC_(x)]
-
-#define PHASE_JAC_ID_(x, row, e) \
-  int_data[PHASE_INT_LOC_(x) + 1 + (row) * NUM_AERO_PHASE_JAC_ELEM_(x) + (e)]
-
-/*
- * Float sub-block layout at PHASE_FLOAT_LOC_(x):
- *   [0 ... n-1] = d(layer_thickness_inner)/dy
- *   [n ... 2n-1] = d(layer_thickness_outer)/dy
- *   [2n ... 3n-1] = d(interface_surface_area)/dy
- *   [3n ... 4n-1] = d(phase_volume_inner)/dy
- *   [4n ... 5n-1] = d(phase_volume_outer)/dy
- */
-#define LAYER_THICKNESS_INNER_JAC_ELEM_(x, e) \
-  float_data[PHASE_FLOAT_LOC_(x) + (e)]
-
-#define LAYER_THICKNESS_OUTER_JAC_ELEM_(x, e) \
-  float_data[PHASE_FLOAT_LOC_(x) + NUM_AERO_PHASE_JAC_ELEM_(x) + (e)]
-
-#define INTERFACE_SURFACE_AREA_JAC_ELEM_(x, e) \
-  float_data[PHASE_FLOAT_LOC_(x) + 2 * NUM_AERO_PHASE_JAC_ELEM_(x) + (e)]
-
-#define PHASE_VOLUME_INNER_JAC_ELEM_(x, e) \
-  float_data[PHASE_FLOAT_LOC_(x) + 3 * NUM_AERO_PHASE_JAC_ELEM_(x) + (e)]
-
-#define PHASE_VOLUME_OUTER_JAC_ELEM_(x, e) \
-  float_data[PHASE_FLOAT_LOC_(x) + 4 * NUM_AERO_PHASE_JAC_ELEM_(x) + (e)]
 
 /** \brief Flag Jacobian elements used by this reaction
  *
@@ -205,16 +181,6 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
       &layer_thickness_outer, // layer thickness 
       NULL); // partial derivative
 
-    // Get the interface surface area (m2)
-    realtype eff_sa;
-    aero_rep_get_interface_surface_area__m2(
-        model_data, //model data 
-        AERO_REP_ID_(i_adj_pairs), // aerosol representation index
-        PHASE_ID_INNER_(i_adj_pairs), // inner phase id
-        PHASE_ID_OUTER_(i_adj_pairs), // outer phase id
-        &eff_sa, // interface surface area 
-        NULL); // partial derivative
-
     // Get the volume of the inner phase
     realtype volume_phase_inner;
     aero_rep_get_phase_volume__m3_m3(
@@ -231,6 +197,16 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
         AERO_REP_ID_(i_adj_pairs), // aerosol representation index
         PHASE_ID_OUTER_(i_adj_pairs), // outer phase id
         &volume_phase_outer, // volume of outer phase
+        NULL); // partial derivative
+
+    // Get the interface surface area (m2)
+    realtype eff_sa;
+    aero_rep_get_interface_surface_area__m2(
+        model_data, //model data 
+        AERO_REP_ID_(i_adj_pairs), // aerosol representation index
+        PHASE_ID_INNER_(i_adj_pairs), // inner phase id
+        PHASE_ID_OUTER_(i_adj_pairs), // outer phase id
+        &eff_sa, // interface surface area 
         NULL); // partial derivative
 
     // Calculate the rate constant for diffusion limited mass transfer between
@@ -266,10 +242,62 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
                                                 double *rxn_float_data,
                                                 double *rxn_env_data,
                                                 realtype time_step) {
-  //int *int_data = rxn_int_data;
-  //double *float_data = rxn_float_data;
-  //double *state = model_data->grid_cell_state;
-  //double *env_data = model_data->grid_cell_env;
+  int *int_data = rxn_int_data;
+  double *float_data = rxn_float_data;
+  double *state = model_data->grid_cell_state;
+  double *env_data = model_data->grid_cell_env;
+
+  // Calculate derivative contributions for each adjacent phase pair
+  // Fill Jacobians from aerosol representation functions for each adjacent phase pair
+  for (int i_adj_pairs = 0, i_deriv = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; i_adj_pairs++) {
+
+    /* Get the layer thickness for inner phase id (m) */
+    realtype layer_thickness_inner;
+    aero_rep_get_layer_thickness__m(
+      model_data, //model data 
+      AERO_REP_ID_(i_adj_pairs), // aerosol representation index
+      PHASE_ID_INNER_(i_adj_pairs), // inner phase id
+      &layer_thickness_inner, // layer thickness 
+      &(LAYER_THICKNESS_JAC_ELEM_INNER_(i_adj_pairs, 0))); // partial derivative
+
+    // Get the layer thickness for outer phase id (m)
+    realtype layer_thickness_outer;
+    aero_rep_get_layer_thickness__m(
+      model_data, //model data 
+      AERO_REP_ID_(i_adj_pairs), // aerosol representation index
+      PHASE_ID_OUTER_(i_adj_pairs), // outer phase id
+      &layer_thickness_outer, // layer thickness 
+      &(LAYER_THICKNESS_JAC_ELEM_OUTER_(i_adj_pairs, 0))); // partial derivative
+
+    // Get the volume of the inner phase
+    realtype volume_phase_inner;
+    aero_rep_get_phase_volume__m3_m3(
+        model_data, //model data
+        AERO_REP_ID_(i_adj_pairs), // aerosol representation index
+        PHASE_ID_INNER_(i_adj_pairs), // inner phase id
+        &volume_phase_inner, // volume of inner phase
+        &(PHASE_VOLUME_JAC_ELEM_INNER_(i_adj_pairs, 0))); // partial derivative
+
+    // Get the volume of the outer phase
+    realtype volume_phase_outer;
+    aero_rep_get_phase_volume__m3_m3(
+        model_data, //model data
+        AERO_REP_ID_(i_adj_pairs), // aerosol representation index
+        PHASE_ID_OUTER_(i_adj_pairs), // outer phase id
+        &volume_phase_outer, // volume of outer phase
+        &(PHASE_VOLUME_JAC_ELEM_OUTER_(i_adj_pairs, 0))); // partial derivative
+
+    // Get the interface surface area (m2)
+    realtype eff_sa;
+    aero_rep_get_interface_surface_area__m2(
+        model_data, //model data 
+        AERO_REP_ID_(i_adj_pairs), // aerosol representation index
+        PHASE_ID_INNER_(i_adj_pairs), // inner phase id
+        PHASE_ID_OUTER_(i_adj_pairs), // outer phase id
+        &eff_sa, // interface surface area 
+        &(INTERFACE_SURFACE_AREA_JAC_ELEM_(i_adj_pairs, 0))); // partial derivative
+    }
+    return;
 }
 #endif
 

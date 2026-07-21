@@ -71,43 +71,25 @@ module camp_rxn_condensed_phase_diffusion
 ! length NUM_ADJACENT_PAIRS_
 #define PHASE_ID_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + (x))
 #define PHASE_ID_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + NUM_ADJACENT_PAIRS_ + (x))
-#define AERO_SPEC_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 2*NUM_ADJACENT_PAIRS_ + (x))
-#define AERO_SPEC_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 3*NUM_ADJACENT_PAIRS_ + (x))
-#define AERO_REP_ID_(x) this%condensed_data_int(NUM_INT_PROP_ + 4*NUM_ADJACENT_PAIRS_ + (x))
-#define DERIV_ID_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 5*NUM_ADJACENT_PAIRS_ + (x))
-#define DERIV_ID_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 6*NUM_ADJACENT_PAIRS_ + (x))
+#define NUM_AERO_PHASE_JAC_ELEM_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 2*NUM_ADJACENT_PAIRS_ + (x))
+#define NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 3*NUM_ADJACENT_PAIRS_ + (x))
+! Cumulative sum of the number of Jacobian elements for each pair, used to index into the condensed_data_real array
+#define NUM_AERO_PHASE_JAC_ELEM_(x) this%condensed_data_int(NUM_INT_PROP_ + 4*NUM_ADJACENT_PAIRS_ + (x))
+#define AERO_SPEC_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 5*NUM_ADJACENT_PAIRS_ + (x))
+#define AERO_SPEC_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 6*NUM_ADJACENT_PAIRS_ + (x))
+#define AERO_REP_ID_(x) this%condensed_data_int(NUM_INT_PROP_ + 7*NUM_ADJACENT_PAIRS_ + (x))
+#define DERIV_ID_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 8*NUM_ADJACENT_PAIRS_ + (x))
+#define DERIV_ID_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 9*NUM_ADJACENT_PAIRS_ + (x))
 
 ! Direct Jacobian slots for the 2x2 inner/outer block for each pair
-#define JAC_ID_INNER_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 7*NUM_ADJACENT_PAIRS_ + (x))
-#define JAC_ID_INNER_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 8*NUM_ADJACENT_PAIRS_ + (x))
-#define JAC_ID_OUTER_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 9*NUM_ADJACENT_PAIRS_ + (x))
-#define JAC_ID_OUTER_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 10*NUM_ADJACENT_PAIRS_ + (x))
+#define JAC_ID_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 10*NUM_ADJACENT_PAIRS_ + (x))
+#define JAC_ID_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 11*NUM_ADJACENT_PAIRS_ + (x))
 
-! Per-pair offsets into variable-length Jacobian dependency bookkeeping
-#define PHASE_INT_LOC_(x) this%condensed_data_int(NUM_INT_PROP_ + 11*NUM_ADJACENT_PAIRS_ + (x))
-#define PHASE_REAL_LOC_(x) this%condensed_data_int(NUM_INT_PROP_ + 12*NUM_ADJACENT_PAIRS_ + (x))
-
-! Integer sub-block layout at PHASE_INT_LOC_(x):
-!   [0] = number of flagged dependency variables for this pair
-!   [1 ... n] = dependency slots for inner-row Jacobian terms
-!   [1 + n ... 1 + 2n - 1] = dependency slots for outer-row Jacobian terms
-#define NUM_AERO_PHASE_JAC_ELEM_(x) this%condensed_data_int(PHASE_INT_LOC_(x))
-#define PHASE_JAC_ID_(x, row, e) this%condensed_data_int(PHASE_INT_LOC_(x) + 1 + (row)*NUM_AERO_PHASE_JAC_ELEM_(x) + (e))
-
-#define JAC_INNER_ROW 0
-#define JAC_OUTER_ROW 1
-
-! Float sub-block layout at PHASE_REAL_LOC_(x):
-!   [0 ... n-1] = d(layer_thickness_inner)/dy
-!   [n ... 2n-1] = d(layer_thickness_outer)/dy
-!   [2n ... 3n-1] = d(interface_surface_area)/dy
-!   [3n ... 4n-1] = d(phase_volume_inner)/dy
-!   [4n ... 5n-1] = d(phase_volume_outer)/dy
-#define LAYER_THICKNESS_INNER_JAC_ELEM_(x, e) this%condensed_data_real(PHASE_REAL_LOC_(x) + (e))
-#define LAYER_THICKNESS_OUTER_JAC_ELEM_(x, e) this%condensed_data_real(PHASE_REAL_LOC_(x) + NUM_AERO_PHASE_JAC_ELEM_(x) + (e))
-#define INTERFACE_SURFACE_AREA_JAC_ELEM_(x, e) this%condensed_data_real(PHASE_REAL_LOC_(x) + 2*NUM_AERO_PHASE_JAC_ELEM_(x) + (e))
-#define PHASE_VOLUME_INNER_JAC_ELEM_(x, e) this%condensed_data_real(PHASE_REAL_LOC_(x) + 3*NUM_AERO_PHASE_JAC_ELEM_(x) + (e))
-#define PHASE_VOLUME_OUTER_JAC_ELEM_(x, e) this%condensed_data_real(PHASE_REAL_LOC_(x) + 4*NUM_AERO_PHASE_JAC_ELEM_(x) + (e))
+#define LAYER_THICKNESS_JAC_ELEM_INNER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_AERO_PHASE_JAC_ELEM_(x) + (e))
+#define LAYER_THICKNESS_JAC_ELEM_OUTER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_AERO_PHASE_JAC_ELEM_(x) + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (e))
+#define PHASE_VOLUME_JAC_ELEM_INNER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_AERO_PHASE_JAC_ELEM_(x) + (e))
+#define PHASE_VOLUME_JAC_ELEM_OUTER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_AERO_PHASE_JAC_ELEM_(x) + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (e))
+#define INTERFACE_SURFACE_AREA_JAC_ELEM_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_AERO_PHASE_JAC_ELEM_(x) + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) + (e))
 
 
   public :: rxn_condensed_phase_diffusion_t
@@ -271,6 +253,10 @@ contains
         i_adj_pairs = i_adj_pairs + 1
         PHASE_ID_INNER_(i_adj_pairs) = adjacent_phases(i)%first_
         PHASE_ID_OUTER_(i_adj_pairs) = adjacent_phases(i)%second_
+        ! Set the number of Jacobian elements for each adjacent phase pair
+        NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs) = aero_rep(i_aero_rep)%val%num_jac_elem(adjacent_phases(i)%first_)
+        NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs) = aero_rep(i_aero_rep)%val%num_jac_elem(adjacent_phases(i)%second_)
+        NUM_AERO_PHASE_JAC_ELEM_(i_adj_pairs) = NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs) + NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs)
       end do
     end do
 
@@ -379,7 +365,7 @@ contains
     ! Save space for the environment-dependent parameters
     this%num_env_params = NUM_ENV_PARAM_
 
-     ! Set aerosol phase specific indices
+    ! Set aerosol phase specific indices
     i_adj_rep_id = 1
     i_aero_id = 1
     do i_aero_rep = 1, size(aero_rep)
