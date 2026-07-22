@@ -222,6 +222,14 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
                     * state[AERO_SPEC_INNER_(i_adj_pairs)] -
                     (DIFF_COEFF_OUTER_(i_adj_pairs) / layer_thickness_outer)
                     * state[AERO_SPEC_OUTER_(i_adj_pairs)]);
+    
+    if (DERIV_ID_INNER_(i_adj_pairs) >= 0) {
+      time_derivative_add_value(time_deriv, DERIV_ID_INNER_(i_adj_pairs),
+                                  rate_inner);
+    }
+    if (DERIV_ID_OUTER_(i_adj_pairs) >= 0) {
+      time_derivative_add_value(time_deriv, DERIV_ID_OUTER_(i_adj_pairs), rate_outer);
+    }
   }
   return;
 }
@@ -296,7 +304,54 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
         PHASE_ID_OUTER_(i_adj_pairs), // outer phase id
         &eff_sa, // interface surface area 
         &(INTERFACE_SURFACE_AREA_JAC_ELEM_(i_adj_pairs, 0))); // partial derivative
+
+    // Calculate the rate constant for diffusion limited mass transfer between
+    // particle layers
+    double rate_inner = (double)(eff_sa / volume_phase_inner);
+    double rate_outer = (double)(eff_sa / volume_phase_outer);
+
+    rate_inner *= ((-DIFF_COEFF_INNER_(i_adj_pairs) / layer_thickness_inner) 
+                    * state[AERO_SPEC_INNER_(i_adj_pairs)] +
+                    (DIFF_COEFF_OUTER_(i_adj_pairs) / layer_thickness_outer) 
+                    * state[AERO_SPEC_OUTER_(i_adj_pairs)]); 
+    rate_outer *= ((DIFF_COEFF_INNER_(i_adj_pairs) / layer_thickness_inner)
+                    * state[AERO_SPEC_INNER_(i_adj_pairs)] -
+                    (DIFF_COEFF_OUTER_(i_adj_pairs) / layer_thickness_outer)
+                    * state[AERO_SPEC_OUTER_(i_adj_pairs)]);
+
+    realtype deriv_inner = (-((eff_sa * DIFF_COEFF_INNER_(i_adj_pairs)) / 
+                            (layer_thickness_inner * volume_phase_inner))
+                            * state[AERO_SPEC_INNER_(i_adj_pairs)])
+                            + (((eff_sa * DIFF_COEFF_OUTER_(i_adj_pairs)) /
+                            (layer_thickness_outer * volume_phase_inner))
+                            * state[AERO_SPEC_OUTER_(i_adj_pairs)]);
+    realtype deriv_outer = (-((eff_sa * DIFF_COEFF_OUTER_(i_adj_pairs)) / 
+                            (layer_thickness_outer * volume_phase_outer))
+                            * state[AERO_SPEC_OUTER_(i_adj_pairs)])
+                            + (((eff_sa * DIFF_COEFF_INNER_(i_adj_pairs)) /
+                            (layer_thickness_inner * volume_phase_outer))
+                            * state[AERO_SPEC_INNER_(i_adj_pairs)]);
+
+    for (int i_elem = 0; i_elem < NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs); ++i_elem) {
+      realtype gamma = (((DIFF_COEFF_INNER_(i_adj_pairs) * state[AERO_SPEC_INNER_(i_adj_pairs)]) / (layer_thickness_inner))
+                      - ((DIFF_COEFF_OUTER_(i_adj_pairs) * state[AERO_SPEC_OUTER_(i_adj_pairs)]) / (layer_thickness_outer)));
+      realtype alpha = (eff_sa * DIFF_COEFF_INNER_(i_adj_pairs) * state[AERO_SPEC_INNER_(i_adj_pairs)]) / (layer_thickness_inner * layer_thickness_inner * volume_phase_inner);
+      realtype beta = (eff_sa * DIFF_COEFF_OUTER_(i_adj_pairs) * state[AERO_SPEC_OUTER_(i_adj_pairs)]) / (layer_thickness_outer * layer_thickness_outer * volume_phase_inner);
+      realtype delta = (eff_sa * DIFF_COEFF_OUTER_(i_adj_pairs) * state[AERO_SPEC_OUTER_(i_adj_pairs)]) / (layer_thickness_outer * layer_thickness_outer * volume_phase_outer);
+      realtype epsilon = (eff_sa * DIFF_COEFF_INNER_(i_adj_pairs) * state[AERO_SPEC_INNER_(i_adj_pairs)]) / (layer_thickness_inner * layer_thickness_inner * volume_phase_outer);
+      deriv_inner += gamma * (-(1/volume_phase_inner) * INTERFACE_SURFACE_AREA_JAC_ELEM_(i_adj_pairs, i_elem) 
+                      + (eff_sa/(volume_phase_inner*volume_phase_inner)) * PHASE_VOLUME_JAC_ELEM_INNER_(i_adj_pairs, i_elem))
+                      + alpha * LAYER_THICKNESS_JAC_ELEM_INNER_(i_adj_pairs, i_elem)
+                      + beta * LAYER_THICKNESS_JAC_ELEM_OUTER_(i_adj_pairs, i_elem);
+      deriv_outer += gamma * ((1/volume_phase_outer) * INTERFACE_SURFACE_AREA_JAC_ELEM_(i_adj_pairs, i_elem) 
+                      - (eff_sa/(volume_phase_outer*volume_phase_outer)) * PHASE_VOLUME_JAC_ELEM_OUTER_(i_adj_pairs, i_elem))
+                      - epsilon * LAYER_THICKNESS_JAC_ELEM_INNER_(i_adj_pairs, i_elem)
+                      + delta * LAYER_THICKNESS_JAC_ELEM_OUTER_(i_adj_pairs, i_elem);
+
+      jacobian_add_value(jac, JAC_ID_INNER_(i_adj_pairs), JACOBIAN_PRODUCTION, deriv_inner);
+      jacobian_add_value(jac, JAC_ID_OUTER_(i_adj_pairs), JACOBIAN_LOSS, deriv_outer);
     }
+  }
     return;
 }
 #endif

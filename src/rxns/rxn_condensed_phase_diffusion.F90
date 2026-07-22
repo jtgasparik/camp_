@@ -256,7 +256,12 @@ contains
         ! Set the number of Jacobian elements for each adjacent phase pair
         NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs) = aero_rep(i_aero_rep)%val%num_jac_elem(adjacent_phases(i)%first_)
         NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs) = aero_rep(i_aero_rep)%val%num_jac_elem(adjacent_phases(i)%second_)
-        NUM_AERO_PHASE_JAC_ELEM_(i_adj_pairs) = NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs) + NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs)
+        ! Cumulative sum of the number of Jacobian elements for each adjacent phase pair, used to index into the condensed_data_real array
+        if (i_adj_pairs == 1) then
+          NUM_AERO_PHASE_JAC_ELEM_(i_adj_pairs) = NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs) + NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs)
+        else
+          NUM_AERO_PHASE_JAC_ELEM_(i_adj_pairs) = NUM_AERO_PHASE_JAC_ELEM_(i_adj_pairs-1) + NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs) + NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs)
+        end if
       end do
     end do
 
