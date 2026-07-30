@@ -89,14 +89,72 @@ void rxn_condensed_phase_diffusion_get_used_jac_elem(ModelData *model_data,
   }
 
   for (int i_adj_pairs = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; ++i_adj_pairs) {
-     jacobian_register_element(jac, AERO_SPEC_INNER_(i_adj_pairs),
-                               AERO_SPEC_INNER_(i_adj_pairs));
-     jacobian_register_element(jac, AERO_SPEC_INNER_(i_adj_pairs),
-                               AERO_SPEC_OUTER_(i_adj_pairs));
-     jacobian_register_element(jac, AERO_SPEC_OUTER_(i_adj_pairs),
-                               AERO_SPEC_INNER_(i_adj_pairs));
-     jacobian_register_element(jac, AERO_SPEC_OUTER_(i_adj_pairs),
-                               AERO_SPEC_OUTER_(i_adj_pairs));
+    // Direct dependence on adjacent-pair species concentrations
+    jacobian_register_element(jac, AERO_SPEC_INNER_(i_adj_pairs),
+                              AERO_SPEC_INNER_(i_adj_pairs));
+    jacobian_register_element(jac, AERO_SPEC_INNER_(i_adj_pairs),
+                              AERO_SPEC_OUTER_(i_adj_pairs));
+    jacobian_register_element(jac, AERO_SPEC_OUTER_(i_adj_pairs),
+                              AERO_SPEC_INNER_(i_adj_pairs));
+    jacobian_register_element(jac, AERO_SPEC_OUTER_(i_adj_pairs),
+                              AERO_SPEC_OUTER_(i_adj_pairs));
+
+    // Discover state dependencies contributed by inner-phase geometry terms.
+    for (int i_elem = 0; i_elem < model_data->n_per_cell_state_var; ++i_elem) {
+      aero_jac_elem[i_elem] = false;
+    }
+    int n_inner_jac_elem =
+        aero_rep_get_used_jac_elem(model_data, AERO_REP_ID_(i_adj_pairs),
+                                   PHASE_ID_INNER_(i_adj_pairs), aero_jac_elem);
+    if (n_inner_jac_elem > NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs)) {
+      printf(
+          "\n\nERROR Received more inner phase Jacobian elements than expected "
+          "for condensed phase diffusion reaction. Got %d, expected <= %d",
+          n_inner_jac_elem, NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs));
+      exit(1);
+    }
+
+    // Any inner-phase dependency affects both inner and outer tendencies.
+    for (int i_elem = 0; i_elem < model_data->n_per_cell_state_var; ++i_elem) {
+      if (aero_jac_elem[i_elem]) {
+        jacobian_register_element(jac, AERO_SPEC_INNER_(i_adj_pairs), i_elem);
+        jacobian_register_element(jac, AERO_SPEC_OUTER_(i_adj_pairs), i_elem);
+      }
+    }
+
+    // Discover state dependencies contributed by outer-phase geometry terms.
+    for (int i_elem = 0; i_elem < model_data->n_per_cell_state_var; ++i_elem) {
+      aero_jac_elem[i_elem] = false;
+    }
+    int n_outer_jac_elem =
+        aero_rep_get_used_jac_elem(model_data, AERO_REP_ID_(i_adj_pairs),
+                                   PHASE_ID_OUTER_(i_adj_pairs), aero_jac_elem);
+    if (n_outer_jac_elem > NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs)) {
+      printf(
+          "\n\nERROR Received more outer phase Jacobian elements than expected "
+          "for condensed phase diffusion reaction. Got %d, expected <= %d",
+          n_outer_jac_elem, NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs));
+      exit(1);
+    }
+
+    // Any outer-phase dependency also affects both tendency equations.
+    for (int i_elem = 0; i_elem < model_data->n_per_cell_state_var; ++i_elem) {
+      if (aero_jac_elem[i_elem]) {
+        jacobian_register_element(jac, AERO_SPEC_INNER_(i_adj_pairs), i_elem);
+        jacobian_register_element(jac, AERO_SPEC_OUTER_(i_adj_pairs), i_elem);
+      }
+    }
+
+    // Validate the packed scratch-space capacity used by downstream Jacobian code.
+    if (n_inner_jac_elem + n_outer_jac_elem >
+        NUM_AERO_PHASE_JAC_ELEM_(i_adj_pairs)) {
+      printf(
+          "\n\nERROR Received more total Jacobian elements than expected for "
+          "condensed phase diffusion reaction. Got %d, expected <= %d",
+          n_inner_jac_elem + n_outer_jac_elem,
+          NUM_AERO_PHASE_JAC_ELEM_(i_adj_pairs));
+      exit(1);
+    }
   }
   free(aero_jac_elem);
 
@@ -119,6 +177,12 @@ void rxn_condensed_phase_diffusion_update_ids(ModelData *model_data, int *deriv_
   for (int i_adj_pairs = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; ++i_adj_pairs) {
      DERIV_ID_INNER_(i_adj_pairs) = deriv_ids[AERO_SPEC_INNER_(i_adj_pairs)];
      DERIV_ID_OUTER_(i_adj_pairs) = deriv_ids[AERO_SPEC_OUTER_(i_adj_pairs)];
+  }
+
+  // Update the Jacobian element ids
+  for (int i_adj_pairs = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; ++i_adj_pairs) {
+     JAC_ID_INNER_(i_adj_pairs) = jacobian_get_element_id(jac, AERO_SPEC_INNER_(i_adj_pairs), AERO_SPEC_OUTER_(i_adj_pairs));
+     JAC_ID_OUTER_(i_adj_pairs) = jacobian_get_element_id(jac, AERO_SPEC_OUTER_(i_adj_pairs), AERO_SPEC_INNER_(i_adj_pairs));
   }
 }
 
