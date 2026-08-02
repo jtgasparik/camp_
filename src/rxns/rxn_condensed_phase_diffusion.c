@@ -36,16 +36,21 @@
 #define NUM_AERO_PHASE_JAC_ELEM_INNER_(x) (int_data[(NUM_INT_PROP_) + (2*NUM_ADJACENT_PAIRS_) + (x)])
 #define NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) (int_data[(NUM_INT_PROP_) + (3*NUM_ADJACENT_PAIRS_) + (x)])
 #define NUM_AERO_PHASE_JAC_ELEM_(x) (int_data[(NUM_INT_PROP_) + (4*NUM_ADJACENT_PAIRS_) + (x)])
-#define AERO_SPEC_INNER_(x) (int_data[(NUM_INT_PROP_) + (5*NUM_ADJACENT_PAIRS_) + (x)]-1)
-#define AERO_SPEC_OUTER_(x) (int_data[(NUM_INT_PROP_) + (6*NUM_ADJACENT_PAIRS_) + (x)]-1)
-#define AERO_REP_ID_(x) (int_data[(NUM_INT_PROP_) + (7*NUM_ADJACENT_PAIRS_) + (x)]-1)
+#define NUM_JAC_ELEM_INNER_TOTAL_(x) (int_data[(NUM_INT_PROP_) + (5*NUM_ADJACENT_PAIRS_) + (x)])
+#define AERO_SPEC_INNER_(x) (int_data[(NUM_INT_PROP_) + (6*NUM_ADJACENT_PAIRS_) + (x)]-1)
+#define AERO_SPEC_OUTER_(x) (int_data[(NUM_INT_PROP_) + (7*NUM_ADJACENT_PAIRS_) + (x)]-1)
+#define AERO_REP_ID_(x) (int_data[(NUM_INT_PROP_) + (8*NUM_ADJACENT_PAIRS_) + (x)]-1)
 
-#define DERIV_ID_INNER_(x) (int_data[(NUM_INT_PROP_) + (8*NUM_ADJACENT_PAIRS_) + (x)])
-#define DERIV_ID_OUTER_(x) (int_data[(NUM_INT_PROP_) + (9*NUM_ADJACENT_PAIRS_) + (x)])
+#define DERIV_ID_INNER_(x) (int_data[(NUM_INT_PROP_) + (9*NUM_ADJACENT_PAIRS_) + (x)])
+#define DERIV_ID_OUTER_(x) (int_data[(NUM_INT_PROP_) + (10*NUM_ADJACENT_PAIRS_) + (x)])
 #define JAC_ID_INNER_(x) \
-  int_data[(NUM_INT_PROP_) + 10 * (NUM_ADJACENT_PAIRS_) + (x)]
-#define JAC_ID_OUTER_(x) \
   int_data[(NUM_INT_PROP_) + 11 * (NUM_ADJACENT_PAIRS_) + (x)]
+#define JAC_ID_OUTER_(x) \
+  int_data[(NUM_INT_PROP_) + 12 * (NUM_ADJACENT_PAIRS_) + (x)]
+#define PHASE_JAC_ID_INNER_(x, e) \
+  int_data[(NUM_INT_PROP_) + 12 * (NUM_ADJACENT_PAIRS_) + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (e)]
+#define PHASE_JAC_ID_OUTER_(x, e) \
+  int_data[(NUM_INT_PROP_) + 12 * (NUM_ADJACENT_PAIRS_) + NUM_JAC_ELEM_INNER_TOTAL_(x) + NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) + (e)]
 
 #define LAYER_THICKNESS_JAC_ELEM_INNER_(x,e) \
   (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + \
@@ -100,6 +105,7 @@ void rxn_condensed_phase_diffusion_get_used_jac_elem(ModelData *model_data,
                               AERO_SPEC_OUTER_(i_adj_pairs));
 
     // Discover state dependencies contributed by inner-phase geometry terms.
+    int n_inner_jac_elem_total = 0;
     for (int i_elem = 0; i_elem < model_data->n_per_cell_state_var; ++i_elem) {
       aero_jac_elem[i_elem] = false;
     }
@@ -112,17 +118,34 @@ void rxn_condensed_phase_diffusion_get_used_jac_elem(ModelData *model_data,
           "for condensed phase diffusion reaction. Got %d, expected <= %d",
           n_inner_jac_elem, NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs));
       exit(1);
+    n_inner_jac_elem_total += n_inner_jac_elem;
     }
 
     // Any inner-phase dependency affects both inner and outer tendencies.
+    int i_used_elem = 0;
     for (int i_elem = 0; i_elem < model_data->n_per_cell_state_var; ++i_elem) {
-      if (aero_jac_elem[i_elem]) {
+      if (aero_jac_elem[i_elem] == true) {
         jacobian_register_element(jac, AERO_SPEC_INNER_(i_adj_pairs), i_elem);
         jacobian_register_element(jac, AERO_SPEC_OUTER_(i_adj_pairs), i_elem);
+        PHASE_JAC_ID_INNER_(i_adj_pairs, i_used_elem) = i_elem;
+        ++i_used_elem;
       }
     }
 
+    for (; i_used_elem < NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs);
+         ++i_used_elem) {
+      PHASE_JAC_ID_INNER_(i_adj_pairs, i_used_elem) = -1;
+    }
+    if (i_used_elem != n_inner_jac_elem) {
+      printf(
+          "\n\nERROR Error setting used Jacobian elements in condensed phase "
+          "diffusion reaction %d %d\n\n",
+          i_used_elem, n_inner_jac_elem);
+      exit(1);
+    }
+
     // Discover state dependencies contributed by outer-phase geometry terms.
+    int n_outer_jac_elem_total = 0;
     for (int i_elem = 0; i_elem < model_data->n_per_cell_state_var; ++i_elem) {
       aero_jac_elem[i_elem] = false;
     }
@@ -135,23 +158,39 @@ void rxn_condensed_phase_diffusion_get_used_jac_elem(ModelData *model_data,
           "for condensed phase diffusion reaction. Got %d, expected <= %d",
           n_outer_jac_elem, NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs));
       exit(1);
+    n_outer_jac_elem_total += n_outer_jac_elem;
     }
 
     // Any outer-phase dependency also affects both tendency equations.
+    i_used_elem = 0;
     for (int i_elem = 0; i_elem < model_data->n_per_cell_state_var; ++i_elem) {
-      if (aero_jac_elem[i_elem]) {
+      if (aero_jac_elem[i_elem] == true) {
         jacobian_register_element(jac, AERO_SPEC_INNER_(i_adj_pairs), i_elem);
         jacobian_register_element(jac, AERO_SPEC_OUTER_(i_adj_pairs), i_elem);
+        PHASE_JAC_ID_OUTER_(i_adj_pairs, i_used_elem) = i_elem;
+        ++i_used_elem;
       }
     }
 
+    for (; i_used_elem < NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs);
+         ++i_used_elem) {
+      PHASE_JAC_ID_OUTER_(i_adj_pairs, i_used_elem) = -1;
+    }
+    if (i_used_elem != n_outer_jac_elem) {
+      printf(
+          "\n\nERROR Error setting used Jacobian elements in condensed phase "
+          "diffusion reaction %d %d\n\n",
+          i_used_elem, n_outer_jac_elem);
+      exit(1);
+    }
+
     // Validate the packed scratch-space capacity used by downstream Jacobian code.
-    if (n_inner_jac_elem + n_outer_jac_elem >
+    if (n_inner_jac_elem_total + n_outer_jac_elem_total >
         NUM_AERO_PHASE_JAC_ELEM_(i_adj_pairs)) {
       printf(
           "\n\nERROR Received more total Jacobian elements than expected for "
           "condensed phase diffusion reaction. Got %d, expected <= %d",
-          n_inner_jac_elem + n_outer_jac_elem,
+          n_inner_jac_elem_total + n_outer_jac_elem_total,
           NUM_AERO_PHASE_JAC_ELEM_(i_adj_pairs));
       exit(1);
     }
