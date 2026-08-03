@@ -26,8 +26,8 @@
 #define NUM_INT_PROP_ 1
 #define NUM_FLOAT_PROP_ 0
 #define NUM_ENV_PARAM_ 0
-#define JAC_INNER_ROW 0
-#define JAC_OUTER_ROW 1
+#define JAC_INNER_ 0
+#define JAC_OUTER_ 1
 
 #define DIFF_COEFF_INNER_(x) (float_data[(NUM_FLOAT_PROP_) + (x)])
 #define DIFF_COEFF_OUTER_(x) (float_data[(NUM_FLOAT_PROP_) + (NUM_ADJACENT_PAIRS_) + (x)])
@@ -47,10 +47,10 @@
   int_data[(NUM_INT_PROP_) + 11 * (NUM_ADJACENT_PAIRS_) + (x)]
 #define JAC_ID_OUTER_(x) \
   int_data[(NUM_INT_PROP_) + 12 * (NUM_ADJACENT_PAIRS_) + (x)]
-#define PHASE_JAC_ID_INNER_(x, e) \
-  int_data[(NUM_INT_PROP_) + 12 * (NUM_ADJACENT_PAIRS_) + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (e)]
-#define PHASE_JAC_ID_OUTER_(x, e) \
-  int_data[(NUM_INT_PROP_) + 12 * (NUM_ADJACENT_PAIRS_) + NUM_JAC_ELEM_INNER_TOTAL_(x) + NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) + (e)]
+#define PHASE_JAC_ID_INNER_(x, s, e) \
+  int_data[(NUM_INT_PROP_) + 12 * (NUM_ADJACENT_PAIRS_) + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (s) + (e)]
+#define PHASE_JAC_ID_OUTER_(x, s, e) \
+  int_data[(NUM_INT_PROP_) + 12 * (NUM_ADJACENT_PAIRS_) + NUM_JAC_ELEM_INNER_TOTAL_(x) + NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) + (s) - 1 + (e)]
 
 #define LAYER_THICKNESS_JAC_ELEM_INNER_(x,e) \
   (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + \
@@ -118,8 +118,8 @@ void rxn_condensed_phase_diffusion_get_used_jac_elem(ModelData *model_data,
           "for condensed phase diffusion reaction. Got %d, expected <= %d",
           n_inner_jac_elem, NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs));
       exit(1);
-    n_inner_jac_elem_total += n_inner_jac_elem;
     }
+    n_inner_jac_elem_total += n_inner_jac_elem;
 
     // Any inner-phase dependency affects both inner and outer tendencies.
     int i_used_elem = 0;
@@ -127,14 +127,14 @@ void rxn_condensed_phase_diffusion_get_used_jac_elem(ModelData *model_data,
       if (aero_jac_elem[i_elem] == true) {
         jacobian_register_element(jac, AERO_SPEC_INNER_(i_adj_pairs), i_elem);
         jacobian_register_element(jac, AERO_SPEC_OUTER_(i_adj_pairs), i_elem);
-        PHASE_JAC_ID_INNER_(i_adj_pairs, i_used_elem) = i_elem;
+        PHASE_JAC_ID_INNER_(i_adj_pairs, JAC_INNER_, i_used_elem) = i_elem;
         ++i_used_elem;
       }
     }
 
     for (; i_used_elem < NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs);
          ++i_used_elem) {
-      PHASE_JAC_ID_INNER_(i_adj_pairs, i_used_elem) = -1;
+      PHASE_JAC_ID_INNER_(i_adj_pairs, JAC_INNER_, i_used_elem) = -1;
     }
     if (i_used_elem != n_inner_jac_elem) {
       printf(
@@ -158,8 +158,8 @@ void rxn_condensed_phase_diffusion_get_used_jac_elem(ModelData *model_data,
           "for condensed phase diffusion reaction. Got %d, expected <= %d",
           n_outer_jac_elem, NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs));
       exit(1);
-    n_outer_jac_elem_total += n_outer_jac_elem;
     }
+    n_outer_jac_elem_total += n_outer_jac_elem;
 
     // Any outer-phase dependency also affects both tendency equations.
     i_used_elem = 0;
@@ -167,14 +167,14 @@ void rxn_condensed_phase_diffusion_get_used_jac_elem(ModelData *model_data,
       if (aero_jac_elem[i_elem] == true) {
         jacobian_register_element(jac, AERO_SPEC_INNER_(i_adj_pairs), i_elem);
         jacobian_register_element(jac, AERO_SPEC_OUTER_(i_adj_pairs), i_elem);
-        PHASE_JAC_ID_OUTER_(i_adj_pairs, i_used_elem) = i_elem;
+        PHASE_JAC_ID_OUTER_(i_adj_pairs, JAC_OUTER_, i_used_elem) = i_elem;
         ++i_used_elem;
       }
     }
 
     for (; i_used_elem < NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs);
          ++i_used_elem) {
-      PHASE_JAC_ID_OUTER_(i_adj_pairs, i_used_elem) = -1;
+      PHASE_JAC_ID_OUTER_(i_adj_pairs, JAC_OUTER_, i_used_elem) = -1;
     }
     if (i_used_elem != n_outer_jac_elem) {
       printf(
@@ -219,10 +219,37 @@ void rxn_condensed_phase_diffusion_update_ids(ModelData *model_data, int *deriv_
   }
 
   // Update the Jacobian element ids
+  int i_jac = 0;
   for (int i_adj_pairs = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; ++i_adj_pairs) {
-     JAC_ID_INNER_(i_adj_pairs) = jacobian_get_element_id(jac, AERO_SPEC_INNER_(i_adj_pairs), AERO_SPEC_OUTER_(i_adj_pairs));
-     JAC_ID_OUTER_(i_adj_pairs) = jacobian_get_element_id(jac, AERO_SPEC_OUTER_(i_adj_pairs), AERO_SPEC_INNER_(i_adj_pairs));
+    JAC_ID_INNER_(i_jac++) = jacobian_get_element_id(jac, AERO_SPEC_INNER_(i_adj_pairs), AERO_SPEC_INNER_(i_adj_pairs));
+    JAC_ID_INNER_(i_jac++) = jacobian_get_element_id(jac, AERO_SPEC_INNER_(i_adj_pairs), AERO_SPEC_OUTER_(i_adj_pairs));
+    JAC_ID_OUTER_(i_jac++) = jacobian_get_element_id(jac, AERO_SPEC_OUTER_(i_adj_pairs), AERO_SPEC_INNER_(i_adj_pairs));
+    JAC_ID_OUTER_(i_jac++) = jacobian_get_element_id(jac, AERO_SPEC_OUTER_(i_adj_pairs), AERO_SPEC_OUTER_(i_adj_pairs));
   }
+
+    // Save non-zero Jacobian element indices for aerosol representation
+    // function dependencies. We use the state-variable indices stored
+    // previously in PHASE_JAC_ID_INNER_ and PHASE_JAC_ID_OUTER_ to look up the 
+    // corresponding Jacobian element index in the flattened sparse matrix.
+    // We do this for both the dependence of the INNER species and the
+    // OUTER species on each independent variable used by the aerosol
+    // representation functions.
+    for (int i_adj_pairs = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; ++i_adj_pairs) {
+      for (int i_elem = 0; i_elem < NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs); ++i_elem) {
+        if (PHASE_JAC_ID_INNER_(i_adj_pairs, JAC_INNER_, i_elem) > 0) {
+          PHASE_JAC_ID_INNER_(i_adj_pairs, JAC_INNER_, i_elem) =
+              jacobian_get_element_id(jac, AERO_SPEC_INNER_(i_adj_pairs),
+                                      PHASE_JAC_ID_INNER_(i_adj_pairs, JAC_INNER_, i_elem));
+        }
+      }
+      for (int i_elem = 0; i_elem < NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs); ++i_elem) {
+        if (PHASE_JAC_ID_OUTER_(i_adj_pairs, JAC_OUTER_, i_elem) > 0) {
+          PHASE_JAC_ID_OUTER_(i_adj_pairs, JAC_OUTER_, i_elem) =
+              jacobian_get_element_id(jac, AERO_SPEC_OUTER_(i_adj_pairs),
+                                      PHASE_JAC_ID_OUTER_(i_adj_pairs, JAC_OUTER_, i_elem));
+        }
+      }
+    }
 }
 
 /** \brief Update reaction data for new environmental conditions
