@@ -53,9 +53,9 @@
   int_data[(NUM_INT_PROP_) + 14 * (NUM_ADJACENT_PAIRS_) + (x)]
 
 #define PHASE_JAC_ID_INNER_(x, s, e) \
-  int_data[(NUM_INT_PROP_) + 14 * (NUM_ADJACENT_PAIRS_) + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (s) + (e)]
+  int_data[(NUM_INT_PROP_) + 15 * (NUM_ADJACENT_PAIRS_) + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (s) + (e)]
 #define PHASE_JAC_ID_OUTER_(x, s, e) \
-  int_data[(NUM_INT_PROP_) + 14 * (NUM_ADJACENT_PAIRS_) + (s) * NUM_JAC_ELEM_INNER_TOTAL_(x) + NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) + (e)]
+  int_data[(NUM_INT_PROP_) + 15 * (NUM_ADJACENT_PAIRS_) + NUM_JAC_ELEM_INNER_TOTAL_(x) + (s) * NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) + (e)]
 
 #define LAYER_THICKNESS_JAC_ELEM_INNER_(x,e) \
   (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + \

@@ -85,11 +85,11 @@ module camp_rxn_condensed_phase_diffusion
 ! Direct Jacobian slots for the 2x2 inner/outer block for each pair
 #define JAC_ID_INNER_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 11*NUM_ADJACENT_PAIRS_ + (x))
 #define JAC_ID_INNER_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 12*NUM_ADJACENT_PAIRS_ + (x))
-#define JAC_ID_OUTER_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 13*NUM_ADJACENT_PAIRS_ + (x))
-#define JAC_ID_OUTER_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 14*NUM_ADJACENT_PAIRS_ + (x))
+#define JAC_ID_OUTER_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 13*NUM_ADJACENT_PAIRS_ + (x))
+#define JAC_ID_OUTER_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 14*NUM_ADJACENT_PAIRS_ + (x))
 
-#define PHASE_JAC_ID_INNER_(x,j,e) this%condensed_data_int(NUM_INT_PROP_ + 14*NUM_ADJACENT_PAIRS_ + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (j) + (e))
-#define PHASE_JAC_ID_OUTER_(x,j,e) this%condensed_data_int(NUM_INT_PROP_ + 14*NUM_ADJACENT_PAIRS_ + (j) * NUM_AERO_PHASE_JAC_ELEM_INNER_TOTAL_(x) + NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) + (e))
+#define PHASE_JAC_ID_INNER_(x,j,e) this%condensed_data_int(NUM_INT_PROP_ + 15*NUM_ADJACENT_PAIRS_ + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (j) + (e))
+#define PHASE_JAC_ID_OUTER_(x,j,e) this%condensed_data_int(NUM_INT_PROP_ + 15*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_INNER_TOTAL_(x) + (j) * NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) + (e))
 
 #define LAYER_THICKNESS_JAC_ELEM_INNER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_AERO_PHASE_JAC_ELEM_(x) + (e))
 #define LAYER_THICKNESS_JAC_ELEM_OUTER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_AERO_PHASE_JAC_ELEM_(x) + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (e))
@@ -233,7 +233,7 @@ contains
     ! Allocate space in the condensed data arrays early so macros can be used
     ! TODO: allocate int data and real data once length is known
     allocate(this%condensed_data_int(BLOCK_SIZE_ * 20 ))
-    allocate(this%condensed_data_real(BLOCK_SIZE_ * 2 ))
+    allocate(this%condensed_data_real(BLOCK_SIZE_ * 10 ))
     this%condensed_data_int(:) = int(0, kind=i_kind)
     this%condensed_data_real(:) = real(0.0, kind=dp)
 
