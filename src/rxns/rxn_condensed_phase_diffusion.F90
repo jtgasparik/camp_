@@ -79,12 +79,17 @@ module camp_rxn_condensed_phase_diffusion
 #define AERO_SPEC_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 6*NUM_ADJACENT_PAIRS_ + (x))
 #define AERO_SPEC_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 7*NUM_ADJACENT_PAIRS_ + (x))
 #define AERO_REP_ID_(x) this%condensed_data_int(NUM_INT_PROP_ + 8*NUM_ADJACENT_PAIRS_ + (x))
+
 #define DERIV_ID_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 9*NUM_ADJACENT_PAIRS_ + (x))
 #define DERIV_ID_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 10*NUM_ADJACENT_PAIRS_ + (x))
-
 ! Direct Jacobian slots for the 2x2 inner/outer block for each pair
-#define JAC_ID_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 11*NUM_ADJACENT_PAIRS_ + (x))
-#define JAC_ID_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 12*NUM_ADJACENT_PAIRS_ + (x))
+#define JAC_ID_INNER_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 11*NUM_ADJACENT_PAIRS_ + (x))
+#define JAC_ID_INNER_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 12*NUM_ADJACENT_PAIRS_ + (x))
+#define JAC_ID_OUTER_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 13*NUM_ADJACENT_PAIRS_ + (x))
+#define JAC_ID_OUTER_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 14*NUM_ADJACENT_PAIRS_ + (x))
+
+#define PHASE_JAC_ID_INNER_(x,j,e) this%condensed_data_int(NUM_INT_PROP_ + 14*NUM_ADJACENT_PAIRS_ + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (j) + (e))
+#define PHASE_JAC_ID_OUTER_(x,j,e) this%condensed_data_int(NUM_INT_PROP_ + 14*NUM_ADJACENT_PAIRS_ + (j) * NUM_AERO_PHASE_JAC_ELEM_INNER_TOTAL_(x) + NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) + (e))
 
 #define LAYER_THICKNESS_JAC_ELEM_INNER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_AERO_PHASE_JAC_ELEM_(x) + (e))
 #define LAYER_THICKNESS_JAC_ELEM_OUTER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_AERO_PHASE_JAC_ELEM_(x) + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (e))
