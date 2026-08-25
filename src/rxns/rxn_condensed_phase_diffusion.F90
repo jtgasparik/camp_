@@ -71,10 +71,10 @@ module camp_rxn_condensed_phase_diffusion
 ! length NUM_ADJACENT_PAIRS_
 #define PHASE_ID_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + (x))
 #define PHASE_ID_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + NUM_ADJACENT_PAIRS_ + (x))
-#define NUM_AERO_PHASE_JAC_ELEM_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 2*NUM_ADJACENT_PAIRS_ + (x))
-#define NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 3*NUM_ADJACENT_PAIRS_ + (x))
+#define NUM_JAC_ELEM_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 2*NUM_ADJACENT_PAIRS_ + (x))
+#define NUM_JAC_ELEM_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 3*NUM_ADJACENT_PAIRS_ + (x))
 ! Cumulative sum of the number of Jacobian elements for each pair, used to index into the condensed_data_real array
-#define NUM_AERO_PHASE_JAC_ELEM_(x) this%condensed_data_int(NUM_INT_PROP_ + 4*NUM_ADJACENT_PAIRS_ + (x))
+#define NUM_JAC_ELEM_TOTAL_(x) this%condensed_data_int(NUM_INT_PROP_ + 4*NUM_ADJACENT_PAIRS_ + (x))
 #define NUM_JAC_ELEM_INNER_TOTAL_(x) this%condensed_data_int(NUM_INT_PROP_ + 5*NUM_ADJACENT_PAIRS_ + (x))
 #define AERO_SPEC_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 6*NUM_ADJACENT_PAIRS_ + (x))
 #define AERO_SPEC_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 7*NUM_ADJACENT_PAIRS_ + (x))
@@ -88,14 +88,15 @@ module camp_rxn_condensed_phase_diffusion
 #define JAC_ID_OUTER_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 13*NUM_ADJACENT_PAIRS_ + (x))
 #define JAC_ID_OUTER_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 14*NUM_ADJACENT_PAIRS_ + (x))
 
-#define PHASE_JAC_ID_INNER_(x,j,e) this%condensed_data_int(NUM_INT_PROP_ + 15*NUM_ADJACENT_PAIRS_ + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (j) + (e))
-#define PHASE_JAC_ID_OUTER_(x,j,e) this%condensed_data_int(NUM_INT_PROP_ + 15*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_INNER_TOTAL_(x) + (j) * NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) + (e))
+#define PHASE_JAC_ID_INNER_(x,e) this%condensed_data_int(NUM_INT_PROP_ + 15*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + (e))
+#define PHASE_JAC_ID_OUTER_(x,e) this%condensed_data_int(NUM_INT_PROP_ + 15*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + NUM_JAC_ELEM_INNER_(x) + (e))
 
-#define LAYER_THICKNESS_JAC_ELEM_INNER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_AERO_PHASE_JAC_ELEM_(x) + (e))
-#define LAYER_THICKNESS_JAC_ELEM_OUTER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_AERO_PHASE_JAC_ELEM_(x) + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (e))
-#define PHASE_VOLUME_JAC_ELEM_INNER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_AERO_PHASE_JAC_ELEM_(x) + (e))
-#define PHASE_VOLUME_JAC_ELEM_OUTER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_AERO_PHASE_JAC_ELEM_(x) + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (e))
-#define INTERFACE_SURFACE_AREA_JAC_ELEM_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_AERO_PHASE_JAC_ELEM_(x) + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) + (e))
+#define LAYER_THICKNESS_JAC_ELEM_INNER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + (e))
+#define LAYER_THICKNESS_JAC_ELEM_OUTER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + NUM_JAC_ELEM_INNER_(x) + (e))
+! TODO: these are wrong
+#define PHASE_VOLUME_JAC_ELEM_INNER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + (e))
+#define PHASE_VOLUME_JAC_ELEM_OUTER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + NUM_JAC_ELEM_INNER_(x) + (e))
+#define INTERFACE_SURFACE_AREA_JAC_ELEM_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + NUM_JAC_ELEM_INNER_(x) + NUM_JAC_ELEM_OUTER_(x) + (e))
 
 
   public :: rxn_condensed_phase_diffusion_t
@@ -260,15 +261,15 @@ contains
         PHASE_ID_INNER_(i_adj_pairs) = adjacent_phases(i)%first_
         PHASE_ID_OUTER_(i_adj_pairs) = adjacent_phases(i)%second_
         ! Set the number of Jacobian elements for each adjacent phase pair
-        NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs) = aero_rep(i_aero_rep)%val%num_jac_elem(adjacent_phases(i)%first_)
-        NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs) = aero_rep(i_aero_rep)%val%num_jac_elem(adjacent_phases(i)%second_)
+        NUM_JAC_ELEM_INNER_(i_adj_pairs) = aero_rep(i_aero_rep)%val%num_jac_elem(adjacent_phases(i)%first_)
+        NUM_JAC_ELEM_OUTER_(i_adj_pairs) = aero_rep(i_aero_rep)%val%num_jac_elem(adjacent_phases(i)%second_)
         ! Cumulative sum of the number of Jacobian elements for each adjacent phase pair, used to index into the condensed_data_real array
         if (i_adj_pairs == 1) then
-          NUM_AERO_PHASE_JAC_ELEM_(i_adj_pairs) = NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs) + NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs)
-          NUM_JAC_ELEM_INNER_TOTAL_(i_adj_pairs) = NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs)
+          NUM_JAC_ELEM_TOTAL_(i_adj_pairs) = 0
+          NUM_JAC_ELEM_INNER_TOTAL_(i_adj_pairs) = 0
         else
-          NUM_AERO_PHASE_JAC_ELEM_(i_adj_pairs) = NUM_AERO_PHASE_JAC_ELEM_(i_adj_pairs-1) + NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs) + NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs)
-          NUM_JAC_ELEM_INNER_TOTAL_(i_adj_pairs) = NUM_JAC_ELEM_INNER_TOTAL_(i_adj_pairs-1) + NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs)
+          NUM_JAC_ELEM_TOTAL_(i_adj_pairs) = NUM_JAC_ELEM_TOTAL_(i_adj_pairs-1) + NUM_JAC_ELEM_INNER_(i_adj_pairs) + NUM_JAC_ELEM_OUTER_(i_adj_pairs)
+          NUM_JAC_ELEM_INNER_TOTAL_(i_adj_pairs) = NUM_JAC_ELEM_INNER_TOTAL_(i_adj_pairs-1) + NUM_JAC_ELEM_INNER_(i_adj_pairs)
         end if
       end do
     end do
@@ -388,6 +389,29 @@ contains
       end do
       i_aero_id = i_aero_id + 1
     end do
+
+    ! DEBUG: print all preprocessor variable values/indices for this reaction
+    write(*,*) "[rxn_condensed_phase_diffusion.F90] NUM_ADJACENT_PAIRS_ =", &
+               NUM_ADJACENT_PAIRS_
+    do i_adj_pairs = 1, NUM_ADJACENT_PAIRS_
+      write(*,*) "  pair", i_adj_pairs
+      write(*,*) "    PHASE_ID_INNER_ =", PHASE_ID_INNER_(i_adj_pairs), &
+                 " PHASE_ID_OUTER_ =", PHASE_ID_OUTER_(i_adj_pairs)
+      write(*,*) "    AERO_REP_ID_ =", AERO_REP_ID_(i_adj_pairs)
+      write(*,*) "    DIFF_COEFF_INNER_ =", DIFF_COEFF_INNER_(i_adj_pairs), &
+                 " DIFF_COEFF_OUTER_ =", DIFF_COEFF_OUTER_(i_adj_pairs)
+      write(*,*) "    AERO_SPEC_INNER_ =", AERO_SPEC_INNER_(i_adj_pairs), &
+                 " AERO_SPEC_OUTER_ =", AERO_SPEC_OUTER_(i_adj_pairs)
+      write(*,*) "    NUM_JAC_ELEM_INNER_ =", &
+                 NUM_JAC_ELEM_INNER_(i_adj_pairs), &
+                 " NUM_JAC_ELEM_OUTER_ =", &
+                 NUM_JAC_ELEM_OUTER_(i_adj_pairs)
+      write(*,*) "    NUM_JAC_ELEM_TOTAL_ (cumulative) =", &
+                 NUM_JAC_ELEM_TOTAL_(i_adj_pairs), &
+                 " NUM_JAC_ELEM_INNER_TOTAL_ (cumulative) =", &
+                 NUM_JAC_ELEM_INNER_TOTAL_(i_adj_pairs)
+    end do
+    print *, "int_data[0]", int_data[0]
 
     deallocate(adj_phase_size)
 

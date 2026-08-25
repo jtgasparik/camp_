@@ -490,8 +490,8 @@ contains
                 diff_coeff_outer(i) = rxn_diffusion%condensed_data_real(num_adjacent_pairs + i)
                 phase_id_inner(i) = rxn_diffusion%condensed_data_int(i + num_int_prop)
                 phase_id_outer(i) = rxn_diffusion%condensed_data_int(num_adjacent_pairs + i + num_int_prop)
-                aero_spec_inner(i) = rxn_diffusion%condensed_data_int((5 * num_adjacent_pairs) + i + num_int_prop)
-                aero_spec_outer(i) = rxn_diffusion%condensed_data_int((6 * num_adjacent_pairs) + i + num_int_prop)
+                aero_spec_inner(i) = rxn_diffusion%condensed_data_int((6 * num_adjacent_pairs) + i + num_int_prop)
+                aero_spec_outer(i) = rxn_diffusion%condensed_data_int((7 * num_adjacent_pairs) + i + num_int_prop)
               end do
               
               ! Test that all diffusion coefficients match the expected value

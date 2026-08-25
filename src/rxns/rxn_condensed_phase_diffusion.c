@@ -26,16 +26,16 @@
 #define NUM_INT_PROP_ 1
 #define NUM_FLOAT_PROP_ 0
 #define NUM_ENV_PARAM_ 0
-#define JAC_INNER_ 0
-#define JAC_OUTER_ 1
+//#define JAC_INNER_ 0
+//#define JAC_OUTER_ 1
 
 #define DIFF_COEFF_INNER_(x) (float_data[(NUM_FLOAT_PROP_) + (x)])
 #define DIFF_COEFF_OUTER_(x) (float_data[(NUM_FLOAT_PROP_) + (NUM_ADJACENT_PAIRS_) + (x)])
 #define PHASE_ID_INNER_(x) (int_data[(NUM_INT_PROP_) + (x)]-1)
 #define PHASE_ID_OUTER_(x) (int_data[(NUM_INT_PROP_) + (NUM_ADJACENT_PAIRS_) + (x)]-1)
-#define NUM_AERO_PHASE_JAC_ELEM_INNER_(x) (int_data[(NUM_INT_PROP_) + (2*NUM_ADJACENT_PAIRS_) + (x)])
-#define NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) (int_data[(NUM_INT_PROP_) + (3*NUM_ADJACENT_PAIRS_) + (x)])
-#define NUM_AERO_PHASE_JAC_ELEM_(x) (int_data[(NUM_INT_PROP_) + (4*NUM_ADJACENT_PAIRS_) + (x)])
+#define NUM_JAC_ELEM_INNER_(x) (int_data[(NUM_INT_PROP_) + (2*NUM_ADJACENT_PAIRS_) + (x)])
+#define NUM_JAC_ELEM_OUTER_(x) (int_data[(NUM_INT_PROP_) + (3*NUM_ADJACENT_PAIRS_) + (x)])
+#define NUM_JAC_ELEM_TOTAL_(x) (int_data[(NUM_INT_PROP_) + (4*NUM_ADJACENT_PAIRS_) + (x)])
 #define NUM_JAC_ELEM_INNER_TOTAL_(x) (int_data[(NUM_INT_PROP_) + (5*NUM_ADJACENT_PAIRS_) + (x)])
 #define AERO_SPEC_INNER_(x) (int_data[(NUM_INT_PROP_) + (6*NUM_ADJACENT_PAIRS_) + (x)]-1)
 #define AERO_SPEC_OUTER_(x) (int_data[(NUM_INT_PROP_) + (7*NUM_ADJACENT_PAIRS_) + (x)]-1)
@@ -52,27 +52,27 @@
 #define JAC_ID_OUTER_INNER_(x) \
   int_data[(NUM_INT_PROP_) + 14 * (NUM_ADJACENT_PAIRS_) + (x)]
 
-#define PHASE_JAC_ID_INNER_(x, s, e) \
-  int_data[(NUM_INT_PROP_) + 15 * (NUM_ADJACENT_PAIRS_) + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (s) + (e)]
-#define PHASE_JAC_ID_OUTER_(x, s, e) \
-  int_data[(NUM_INT_PROP_) + 15 * (NUM_ADJACENT_PAIRS_) + NUM_JAC_ELEM_INNER_TOTAL_(x) + (s) * NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) + (e)]
+#define PHASE_JAC_ID_INNER_(x, e) \
+  int_data[(NUM_INT_PROP_) + 15 * (NUM_ADJACENT_PAIRS_) + NUM_JAC_ELEM_TOTAL_(x) + (e)]
+#define PHASE_JAC_ID_OUTER_(x, e) \
+  int_data[(NUM_INT_PROP_) + 15 * (NUM_ADJACENT_PAIRS_) + NUM_JAC_ELEM_TOTAL_(x) + NUM_JAC_ELEM_INNER_(x) + (e)]
 
 #define LAYER_THICKNESS_JAC_ELEM_INNER_(x,e) \
   (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + \
-              NUM_AERO_PHASE_JAC_ELEM_(x) + (e)])
+              NUM_JAC_ELEM_TOTAL_(x) + (e)])
 #define LAYER_THICKNESS_JAC_ELEM_OUTER_(x,e) \
-  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + NUM_AERO_PHASE_JAC_ELEM_(x) + \
-              NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (e)])
+  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + NUM_JAC_ELEM_TOTAL_(x) + \
+              NUM_JAC_ELEM_INNER_(x) + (e)])
 #define PHASE_VOLUME_JAC_ELEM_INNER_(x,e) \
   (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + \
-              NUM_AERO_PHASE_JAC_ELEM_(x) + (e)])
+              NUM_JAC_ELEM_TOTAL_(x) + (e)])
 #define PHASE_VOLUME_JAC_ELEM_OUTER_(x,e) \
-  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + NUM_AERO_PHASE_JAC_ELEM_(x) + \
-              NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + (e)])
+  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + NUM_JAC_ELEM_TOTAL_(x) + \
+              NUM_JAC_ELEM_INNER_(x) + (e)])
 #define INTERFACE_SURFACE_AREA_JAC_ELEM_(x,e) \
   (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + \
-              NUM_AERO_PHASE_JAC_ELEM_(x) + NUM_AERO_PHASE_JAC_ELEM_INNER_(x) + \
-              NUM_AERO_PHASE_JAC_ELEM_OUTER_(x) + (e)])
+              NUM_JAC_ELEM_TOTAL_(x) + NUM_JAC_ELEM_INNER_(x) + \
+              NUM_JAC_ELEM_OUTER_(x) + (e)])
 
 
 /** \brief Flag Jacobian elements used by this reaction
@@ -117,11 +117,11 @@ void rxn_condensed_phase_diffusion_get_used_jac_elem(ModelData *model_data,
     int n_inner_jac_elem =
         aero_rep_get_used_jac_elem(model_data, AERO_REP_ID_(i_adj_pairs),
                                    PHASE_ID_INNER_(i_adj_pairs), aero_jac_elem);
-    if (n_inner_jac_elem > NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs)) {
+    if (n_inner_jac_elem > NUM_JAC_ELEM_INNER_(i_adj_pairs)) {
       printf(
           "\n\nERROR Received more inner phase Jacobian elements than expected "
           "for condensed phase diffusion reaction. Got %d, expected <= %d",
-          n_inner_jac_elem, NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs));
+          n_inner_jac_elem, NUM_JAC_ELEM_INNER_(i_adj_pairs));
       exit(1);
     }
     n_inner_jac_elem_total += n_inner_jac_elem;
@@ -131,17 +131,16 @@ void rxn_condensed_phase_diffusion_get_used_jac_elem(ModelData *model_data,
     for (int i_elem = 0; i_elem < model_data->n_per_cell_state_var; ++i_elem) {
       if (aero_jac_elem[i_elem] == true) {
         jacobian_register_element(jac, AERO_SPEC_INNER_(i_adj_pairs), i_elem);
-        jacobian_register_element(jac, AERO_SPEC_OUTER_(i_adj_pairs), i_elem);
-        PHASE_JAC_ID_INNER_(i_adj_pairs, JAC_INNER_, i_used_elem) = i_elem;
+        PHASE_JAC_ID_INNER_(i_adj_pairs, i_used_elem) = i_elem;
         printf("Jacobian element for inner phase %d, elem %d: %d\n", i_adj_pairs,
-               i_used_elem, PHASE_JAC_ID_INNER_(i_adj_pairs, JAC_INNER_, i_used_elem));
+               i_used_elem, PHASE_JAC_ID_INNER_(i_adj_pairs, i_used_elem));
         ++i_used_elem;
       }
     }
 
-    for (; i_used_elem < NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs);
+    for (; i_used_elem < NUM_JAC_ELEM_INNER_(i_adj_pairs);
          ++i_used_elem) {
-      PHASE_JAC_ID_INNER_(i_adj_pairs, JAC_INNER_, i_used_elem) = -1;
+      PHASE_JAC_ID_INNER_(i_adj_pairs, i_used_elem) = -1;
     }
     if (i_used_elem != n_inner_jac_elem) {
       printf(
@@ -159,11 +158,11 @@ void rxn_condensed_phase_diffusion_get_used_jac_elem(ModelData *model_data,
     int n_outer_jac_elem =
         aero_rep_get_used_jac_elem(model_data, AERO_REP_ID_(i_adj_pairs),
                                    PHASE_ID_OUTER_(i_adj_pairs), aero_jac_elem);
-    if (n_outer_jac_elem > NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs)) {
+    if (n_outer_jac_elem > NUM_JAC_ELEM_OUTER_(i_adj_pairs)) {
       printf(
           "\n\nERROR Received more outer phase Jacobian elements than expected "
           "for condensed phase diffusion reaction. Got %d, expected <= %d",
-          n_outer_jac_elem, NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs));
+          n_outer_jac_elem, NUM_JAC_ELEM_OUTER_(i_adj_pairs));
       exit(1);
     }
     n_outer_jac_elem_total += n_outer_jac_elem;
@@ -172,18 +171,17 @@ void rxn_condensed_phase_diffusion_get_used_jac_elem(ModelData *model_data,
     i_used_elem = 0;
     for (int i_elem = 0; i_elem < model_data->n_per_cell_state_var; ++i_elem) {
       if (aero_jac_elem[i_elem] == true) {
-        jacobian_register_element(jac, AERO_SPEC_INNER_(i_adj_pairs), i_elem);
         jacobian_register_element(jac, AERO_SPEC_OUTER_(i_adj_pairs), i_elem);
-        PHASE_JAC_ID_OUTER_(i_adj_pairs, JAC_OUTER_, i_used_elem) = i_elem;
+        PHASE_JAC_ID_OUTER_(i_adj_pairs, i_used_elem) = i_elem;
         printf("Jacobian element for outer phase %d, elem %d: %d\n", i_adj_pairs,
-               i_elem, PHASE_JAC_ID_OUTER_(i_adj_pairs, JAC_OUTER_, i_used_elem));
+               i_elem, PHASE_JAC_ID_OUTER_(i_adj_pairs, i_used_elem));
         ++i_used_elem;
       }
     }
 
-    for (; i_used_elem < NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs);
+    for (; i_used_elem < NUM_JAC_ELEM_OUTER_(i_adj_pairs);
          ++i_used_elem) {
-      PHASE_JAC_ID_OUTER_(i_adj_pairs, JAC_OUTER_, i_used_elem) = -1;
+      PHASE_JAC_ID_OUTER_(i_adj_pairs, i_used_elem) = -1;
     }
     if (i_used_elem != n_outer_jac_elem) {
       printf(
@@ -195,12 +193,12 @@ void rxn_condensed_phase_diffusion_get_used_jac_elem(ModelData *model_data,
 
     // Validate the packed scratch-space capacity used by downstream Jacobian code.
     if (n_inner_jac_elem_total + n_outer_jac_elem_total >
-        NUM_AERO_PHASE_JAC_ELEM_(i_adj_pairs)) {
+        NUM_JAC_ELEM_TOTAL_(i_adj_pairs)) {
       printf(
           "\n\nERROR Received more total Jacobian elements than expected for "
           "condensed phase diffusion reaction. Got %d, expected <= %d",
           n_inner_jac_elem_total + n_outer_jac_elem_total,
-          NUM_AERO_PHASE_JAC_ELEM_(i_adj_pairs));
+          NUM_JAC_ELEM_TOTAL_(i_adj_pairs));
       exit(1);
     }
   }
@@ -230,11 +228,10 @@ void rxn_condensed_phase_diffusion_update_ids(ModelData *model_data, int *deriv_
   // Update the Jacobian element ids
   int i_jac = 0;
   for (int i_adj_pairs = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; ++i_adj_pairs) {
-    JAC_ID_INNER_INNER_(i_jac++) = jacobian_get_element_id(jac, AERO_SPEC_INNER_(i_adj_pairs), AERO_SPEC_INNER_(i_adj_pairs));
-    JAC_ID_INNER_OUTER_(i_jac++) = jacobian_get_element_id(jac, AERO_SPEC_INNER_(i_adj_pairs), AERO_SPEC_OUTER_(i_adj_pairs));
-    JAC_ID_OUTER_OUTER_(i_jac++) = jacobian_get_element_id(jac, AERO_SPEC_OUTER_(i_adj_pairs), AERO_SPEC_OUTER_(i_adj_pairs));
+    JAC_ID_INNER_INNER_(i_jac) = jacobian_get_element_id(jac, AERO_SPEC_INNER_(i_adj_pairs), AERO_SPEC_INNER_(i_adj_pairs));
+    JAC_ID_INNER_OUTER_(i_jac) = jacobian_get_element_id(jac, AERO_SPEC_INNER_(i_adj_pairs), AERO_SPEC_OUTER_(i_adj_pairs));
+    JAC_ID_OUTER_OUTER_(i_jac) = jacobian_get_element_id(jac, AERO_SPEC_OUTER_(i_adj_pairs), AERO_SPEC_OUTER_(i_adj_pairs));
     JAC_ID_OUTER_INNER_(i_jac++) = jacobian_get_element_id(jac, AERO_SPEC_OUTER_(i_adj_pairs), AERO_SPEC_INNER_(i_adj_pairs));
-    printf("AERO_SPEC_INNER_(%d) = %d, AERO_SPEC_OUTER_(%d) = %d\n", i_adj_pairs, AERO_SPEC_INNER_(i_adj_pairs), i_adj_pairs, AERO_SPEC_OUTER_(i_adj_pairs));
   }
 
     // Save non-zero Jacobian element indices for aerosol representation
@@ -245,21 +242,58 @@ void rxn_condensed_phase_diffusion_update_ids(ModelData *model_data, int *deriv_
     // OUTER species on each independent variable used by the aerosol
     // representation functions.
     for (int i_adj_pairs = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; ++i_adj_pairs) {
-      for (int i_elem = 0; i_elem < NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs); ++i_elem) {
-        if (PHASE_JAC_ID_INNER_(i_adj_pairs, JAC_INNER_, i_elem) > 0) {
-          PHASE_JAC_ID_INNER_(i_adj_pairs, JAC_INNER_, i_elem) =
+      for (int i_elem = 0; i_elem < NUM_JAC_ELEM_INNER_(i_adj_pairs); ++i_elem) {
+        if (PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem) > 0) {
+          PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem) =
               jacobian_get_element_id(jac, AERO_SPEC_INNER_(i_adj_pairs),
-                                      PHASE_JAC_ID_INNER_(i_adj_pairs, JAC_INNER_, i_elem));
+                                      PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem));
         }
       }
-      for (int i_elem = 0; i_elem < NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs); ++i_elem) {
-        if (PHASE_JAC_ID_OUTER_(i_adj_pairs, JAC_OUTER_, i_elem) > 0) {
-          PHASE_JAC_ID_OUTER_(i_adj_pairs, JAC_OUTER_, i_elem) =
+      for (int i_elem = 0; i_elem < NUM_JAC_ELEM_OUTER_(i_adj_pairs); ++i_elem) {
+        if (PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem) > 0) {
+          PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem) =
               jacobian_get_element_id(jac, AERO_SPEC_OUTER_(i_adj_pairs),
-                                      PHASE_JAC_ID_OUTER_(i_adj_pairs, JAC_OUTER_, i_elem));
+                                      PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem));
         }
       }
     }
+
+  // DEBUG: print all preprocessor variable values/indices for this reaction
+  printf("[rxn_condensed_phase_diffusion.c] NUM_ADJACENT_PAIRS_ = %d\n", NUM_ADJACENT_PAIRS_);
+  for (int i_adj_pairs = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; ++i_adj_pairs) {
+    printf("  pair %d:\n", i_adj_pairs);
+    printf("    PHASE_ID_INNER_ = %d, PHASE_ID_OUTER_ = %d\n",
+           PHASE_ID_INNER_(i_adj_pairs), PHASE_ID_OUTER_(i_adj_pairs));
+    printf("    AERO_REP_ID_ = %d\n", AERO_REP_ID_(i_adj_pairs));
+    printf("    DIFF_COEFF_INNER_ = %le, DIFF_COEFF_OUTER_ = %le\n",
+           DIFF_COEFF_INNER_(i_adj_pairs), DIFF_COEFF_OUTER_(i_adj_pairs));
+    printf("    AERO_SPEC_INNER_ = %d, AERO_SPEC_OUTER_ = %d\n",
+           AERO_SPEC_INNER_(i_adj_pairs), AERO_SPEC_OUTER_(i_adj_pairs));
+    printf("    DERIV_ID_INNER_ = %d, DERIV_ID_OUTER_ = %d\n",
+           DERIV_ID_INNER_(i_adj_pairs), DERIV_ID_OUTER_(i_adj_pairs));
+    printf("    JAC_ID_INNER_INNER_ = %d, JAC_ID_INNER_OUTER_ = %d, "
+           "JAC_ID_OUTER_OUTER_ = %d, JAC_ID_OUTER_INNER_ = %d\n",
+           JAC_ID_INNER_INNER_(i_adj_pairs), JAC_ID_INNER_OUTER_(i_adj_pairs),
+           JAC_ID_OUTER_OUTER_(i_adj_pairs), JAC_ID_OUTER_INNER_(i_adj_pairs));
+    printf("    NUM_JAC_ELEM_INNER_ = %d, "
+           "NUM_JAC_ELEM_OUTER_ = %d\n",
+           NUM_JAC_ELEM_INNER_(i_adj_pairs),
+           NUM_JAC_ELEM_OUTER_(i_adj_pairs));
+    printf("    NUM_JAC_ELEM_TOTAL_ (cumulative) = %d, "
+           "NUM_JAC_ELEM_INNER_TOTAL_ (cumulative) = %d\n",
+           NUM_JAC_ELEM_TOTAL_(i_adj_pairs),
+           NUM_JAC_ELEM_INNER_TOTAL_(i_adj_pairs));
+    for (int i_elem = 0; i_elem < NUM_JAC_ELEM_INNER_(i_adj_pairs);
+         ++i_elem) {
+      printf("      PHASE_JAC_ID_INNER_(%d, %d) = %d\n", i_adj_pairs, i_elem,
+             PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem));
+    }
+    for (int i_elem = 0; i_elem < NUM_JAC_ELEM_OUTER_(i_adj_pairs);
+         ++i_elem) {
+      printf("      PHASE_JAC_ID_OUTER_(%d, %d) = %d\n", i_adj_pairs, i_elem,
+             PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem));
+    }
+  }
 }
 
 /** \brief Update reaction data for new environmental conditions
@@ -371,16 +405,14 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
     if (DERIV_ID_INNER_(i_adj_pairs) >= 0) {
       time_derivative_add_value(time_deriv, DERIV_ID_INNER_(i_adj_pairs),
                                   -rate_inner_loss);
-    }
-    if (DERIV_ID_INNER_(i_adj_pairs) >= 0) {
       time_derivative_add_value(time_deriv, DERIV_ID_INNER_(i_adj_pairs),
                                   rate_inner_prod);
     }
     if (DERIV_ID_OUTER_(i_adj_pairs) >= 0) {
-      time_derivative_add_value(time_deriv, DERIV_ID_OUTER_(i_adj_pairs), -rate_outer_loss);
-    }
-    if (DERIV_ID_OUTER_(i_adj_pairs) >= 0) {
-      time_derivative_add_value(time_deriv, DERIV_ID_OUTER_(i_adj_pairs), rate_outer_prod);
+      time_derivative_add_value(time_deriv, DERIV_ID_OUTER_(i_adj_pairs),
+                                  -rate_outer_loss);
+      time_derivative_add_value(time_deriv, DERIV_ID_OUTER_(i_adj_pairs),
+                                  rate_outer_prod);
     }
 
   }
@@ -496,7 +528,7 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
     realtype deriv_outer_loss = -(epsilon * state[AERO_SPEC_OUTER_(i_adj_pairs)]);
     realtype deriv_outer_prod = (alpha * state[AERO_SPEC_INNER_(i_adj_pairs)]);
 
-    for (int i_elem = 0; i_elem < NUM_AERO_PHASE_JAC_ELEM_INNER_(i_adj_pairs); ++i_elem) {
+    for (int i_elem = 0; i_elem < NUM_JAC_ELEM_INNER_(i_adj_pairs); ++i_elem) {
       deriv_inner_loss += ( - gamma / eff_sa) * state[AERO_SPEC_INNER_(i_adj_pairs)] *
            INTERFACE_SURFACE_AREA_JAC_ELEM_(i_adj_pairs, i_elem) + 
            (gamma / volume_phase_inner) * state[AERO_SPEC_INNER_(i_adj_pairs)] * 
@@ -508,13 +540,13 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
            ( beta / layer_thickness_inner ) * state[AERO_SPEC_OUTER_(i_adj_pairs)] * 
            LAYER_THICKNESS_JAC_ELEM_INNER_(i_adj_pairs, i_elem);
 
-      if (PHASE_JAC_ID_INNER_(i_adj_pairs, JAC_INNER_, i_elem) >= 0) {
-        jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_INNER_(i_adj_pairs, JAC_INNER_, i_elem), JACOBIAN_LOSS, deriv_inner_loss);
-        jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_INNER_(i_adj_pairs, JAC_INNER_, i_elem), JACOBIAN_PRODUCTION, deriv_inner_prod);
+      if (PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem) >= 0) {
+        jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem), JACOBIAN_LOSS, deriv_inner_loss);
+        jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem), JACOBIAN_PRODUCTION, deriv_inner_prod);
       }
 
     }
-    for (int i_elem = 0; i_elem < NUM_AERO_PHASE_JAC_ELEM_OUTER_(i_adj_pairs); ++i_elem) {
+    for (int i_elem = 0; i_elem < NUM_JAC_ELEM_OUTER_(i_adj_pairs); ++i_elem) {
       deriv_outer_loss += ( - epsilon / eff_sa) * state[AERO_SPEC_OUTER_(i_adj_pairs)] *
            INTERFACE_SURFACE_AREA_JAC_ELEM_(i_adj_pairs, i_elem) + (epsilon / volume_phase_outer) * 
            state[AERO_SPEC_OUTER_(i_adj_pairs)] * PHASE_VOLUME_JAC_ELEM_OUTER_(i_adj_pairs, i_elem) + 
@@ -526,9 +558,9 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
            (alpha / layer_thickness_outer) * state[AERO_SPEC_INNER_(i_adj_pairs)] *
            LAYER_THICKNESS_JAC_ELEM_OUTER_(i_adj_pairs, i_elem);
 
-      if (PHASE_JAC_ID_OUTER_(i_adj_pairs, JAC_OUTER_, i_elem) >= 0) {
-        jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_OUTER_(i_adj_pairs, JAC_OUTER_, i_elem), JACOBIAN_LOSS, deriv_outer_loss);
-        jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_OUTER_(i_adj_pairs, JAC_OUTER_, i_elem), JACOBIAN_PRODUCTION, deriv_outer_prod);
+      if (PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem) >= 0) {
+        jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem), JACOBIAN_LOSS, deriv_outer_loss);
+        jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem), JACOBIAN_PRODUCTION, deriv_outer_prod);
       }
     }
   }
