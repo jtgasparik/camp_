@@ -484,7 +484,7 @@ contains
               end if
               
               ! Extract diffusion coefficients from condensed data
-              num_int_prop = 1
+              num_int_prop = 2
               do i = 1, num_adjacent_pairs
                 diff_coeff_inner(i) = rxn_diffusion%condensed_data_real(i)
                 diff_coeff_outer(i) = rxn_diffusion%condensed_data_real(num_adjacent_pairs + i)

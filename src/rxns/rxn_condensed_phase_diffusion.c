@@ -22,8 +22,9 @@
 //#define PRESSURE_PA_ env_data[1]
 
 #define NUM_ADJACENT_PAIRS_ int_data[0]
+#define MAX_JAC_ELEM_ int_data[1]
 
-#define NUM_INT_PROP_ 1
+#define NUM_INT_PROP_ 2
 #define NUM_FLOAT_PROP_ 0
 #define NUM_ENV_PARAM_ 0
 //#define JAC_INNER_ 0
@@ -57,22 +58,16 @@
 #define PHASE_JAC_ID_OUTER_(x, e) \
   int_data[(NUM_INT_PROP_) + 15 * (NUM_ADJACENT_PAIRS_) + NUM_JAC_ELEM_TOTAL_(x) + NUM_JAC_ELEM_INNER_(x) + (e)]
 
-#define LAYER_THICKNESS_JAC_ELEM_INNER_(x,e) \
-  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + \
-              NUM_JAC_ELEM_TOTAL_(x) + (e)])
-#define LAYER_THICKNESS_JAC_ELEM_OUTER_(x,e) \
-  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + NUM_JAC_ELEM_TOTAL_(x) + \
-              NUM_JAC_ELEM_INNER_(x) + (e)])
-#define PHASE_VOLUME_JAC_ELEM_INNER_(x,e) \
-  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + \
-              NUM_JAC_ELEM_TOTAL_(x) + (e)])
-#define PHASE_VOLUME_JAC_ELEM_OUTER_(x,e) \
-  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + NUM_JAC_ELEM_TOTAL_(x) + \
-              NUM_JAC_ELEM_INNER_(x) + (e)])
-#define INTERFACE_SURFACE_AREA_JAC_ELEM_(x,e) \
-  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + \
-              NUM_JAC_ELEM_TOTAL_(x) + NUM_JAC_ELEM_INNER_(x) + \
-              NUM_JAC_ELEM_OUTER_(x) + (e)])
+#define LAYER_THICKNESS_JAC_ELEM_INNER_(e) \
+  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + (e)])
+#define LAYER_THICKNESS_JAC_ELEM_OUTER_(e) \
+  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + MAX_JAC_ELEM_ + (e)])
+#define PHASE_VOLUME_JAC_ELEM_INNER_(e) \
+  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + 2*MAX_JAC_ELEM_ + (e)])
+#define PHASE_VOLUME_JAC_ELEM_OUTER_(e) \
+  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + 3*MAX_JAC_ELEM_ + (e)])
+#define INTERFACE_SURFACE_AREA_JAC_ELEM_(e) \
+  (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + 4*MAX_JAC_ELEM_ + (e)])
 
 
 /** \brief Flag Jacobian elements used by this reaction
@@ -192,13 +187,15 @@ void rxn_condensed_phase_diffusion_get_used_jac_elem(ModelData *model_data,
     }
 
     // Validate the packed scratch-space capacity used by downstream Jacobian code.
-    if (n_inner_jac_elem_total + n_outer_jac_elem_total >
-        NUM_JAC_ELEM_TOTAL_(i_adj_pairs)) {
+    // (NUM_JAC_ELEM_TOTAL_ is a cumulative offset into the scratch array, not a
+    // per-pair capacity -- the per-pair capacity is inner + outer.)
+    if (n_inner_jac_elem + n_outer_jac_elem >
+        NUM_JAC_ELEM_INNER_(i_adj_pairs) + NUM_JAC_ELEM_OUTER_(i_adj_pairs)) {
       printf(
           "\n\nERROR Received more total Jacobian elements than expected for "
           "condensed phase diffusion reaction. Got %d, expected <= %d",
-          n_inner_jac_elem_total + n_outer_jac_elem_total,
-          NUM_JAC_ELEM_TOTAL_(i_adj_pairs));
+          n_inner_jac_elem + n_outer_jac_elem,
+          NUM_JAC_ELEM_INNER_(i_adj_pairs) + NUM_JAC_ELEM_OUTER_(i_adj_pairs));
       exit(1);
     }
   }
@@ -451,7 +448,7 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
       AERO_REP_ID_(i_adj_pairs), // aerosol representation index
       PHASE_ID_INNER_(i_adj_pairs), // inner phase id
       &layer_thickness_inner, // layer thickness 
-      &(LAYER_THICKNESS_JAC_ELEM_INNER_(i_adj_pairs, 0))); // partial derivative
+      &(LAYER_THICKNESS_JAC_ELEM_INNER_(0))); // partial derivative
 
     // Get the layer thickness for outer phase id (m)
     realtype layer_thickness_outer;
@@ -460,7 +457,7 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
       AERO_REP_ID_(i_adj_pairs), // aerosol representation index
       PHASE_ID_OUTER_(i_adj_pairs), // outer phase id
       &layer_thickness_outer, // layer thickness 
-      &(LAYER_THICKNESS_JAC_ELEM_OUTER_(i_adj_pairs, 0))); // partial derivative
+      &(LAYER_THICKNESS_JAC_ELEM_OUTER_(0))); // partial derivative
 
     // Get the volume of the inner phase
     realtype volume_phase_inner;
@@ -469,7 +466,7 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
         AERO_REP_ID_(i_adj_pairs), // aerosol representation index
         PHASE_ID_INNER_(i_adj_pairs), // inner phase id
         &volume_phase_inner, // volume of inner phase
-        &(PHASE_VOLUME_JAC_ELEM_INNER_(i_adj_pairs, 0))); // partial derivative
+        &(PHASE_VOLUME_JAC_ELEM_INNER_(0))); // partial derivative
 
     // Get the volume of the outer phase
     realtype volume_phase_outer;
@@ -478,7 +475,7 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
         AERO_REP_ID_(i_adj_pairs), // aerosol representation index
         PHASE_ID_OUTER_(i_adj_pairs), // outer phase id
         &volume_phase_outer, // volume of outer phase
-        &(PHASE_VOLUME_JAC_ELEM_OUTER_(i_adj_pairs, 0))); // partial derivative
+        &(PHASE_VOLUME_JAC_ELEM_OUTER_(0))); // partial derivative
 
     // Get the interface surface area (m2)
     realtype eff_sa;
@@ -488,7 +485,7 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
         PHASE_ID_INNER_(i_adj_pairs), // inner phase id
         PHASE_ID_OUTER_(i_adj_pairs), // outer phase id
         &eff_sa, // interface surface area 
-        &(INTERFACE_SURFACE_AREA_JAC_ELEM_(i_adj_pairs, 0))); // partial derivative
+        &(INTERFACE_SURFACE_AREA_JAC_ELEM_(0))); // partial derivative
 
     // Calculate the rate constant for diffusion limited mass transfer between
     // particle layers
@@ -530,15 +527,15 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
 
     for (int i_elem = 0; i_elem < NUM_JAC_ELEM_INNER_(i_adj_pairs); ++i_elem) {
       deriv_inner_loss += ( - gamma / eff_sa) * state[AERO_SPEC_INNER_(i_adj_pairs)] *
-           INTERFACE_SURFACE_AREA_JAC_ELEM_(i_adj_pairs, i_elem) + 
+           INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) + 
            (gamma / volume_phase_inner) * state[AERO_SPEC_INNER_(i_adj_pairs)] * 
-           PHASE_VOLUME_JAC_ELEM_INNER_(i_adj_pairs, i_elem) + ( gamma / layer_thickness_inner ) * 
-           state[AERO_SPEC_INNER_(i_adj_pairs)] * LAYER_THICKNESS_JAC_ELEM_INNER_(i_adj_pairs, i_elem);
+           PHASE_VOLUME_JAC_ELEM_INNER_(i_elem) + ( gamma / layer_thickness_inner ) * 
+           state[AERO_SPEC_INNER_(i_adj_pairs)] * LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem);
       deriv_inner_prod += ( beta / eff_sa) * state[AERO_SPEC_OUTER_(i_adj_pairs)] *
-           INTERFACE_SURFACE_AREA_JAC_ELEM_(i_adj_pairs, i_elem) - (beta / volume_phase_inner) * 
-           state[AERO_SPEC_OUTER_(i_adj_pairs)] * PHASE_VOLUME_JAC_ELEM_INNER_(i_adj_pairs, i_elem) - 
+           INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) - (beta / volume_phase_inner) * 
+           state[AERO_SPEC_OUTER_(i_adj_pairs)] * PHASE_VOLUME_JAC_ELEM_INNER_(i_elem) - 
            ( beta / layer_thickness_inner ) * state[AERO_SPEC_OUTER_(i_adj_pairs)] * 
-           LAYER_THICKNESS_JAC_ELEM_INNER_(i_adj_pairs, i_elem);
+           LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem);
 
       if (PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem) >= 0) {
         jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem), JACOBIAN_LOSS, deriv_inner_loss);
@@ -548,15 +545,15 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
     }
     for (int i_elem = 0; i_elem < NUM_JAC_ELEM_OUTER_(i_adj_pairs); ++i_elem) {
       deriv_outer_loss += ( - epsilon / eff_sa) * state[AERO_SPEC_OUTER_(i_adj_pairs)] *
-           INTERFACE_SURFACE_AREA_JAC_ELEM_(i_adj_pairs, i_elem) + (epsilon / volume_phase_outer) * 
-           state[AERO_SPEC_OUTER_(i_adj_pairs)] * PHASE_VOLUME_JAC_ELEM_OUTER_(i_adj_pairs, i_elem) + 
+           INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) + (epsilon / volume_phase_outer) * 
+           state[AERO_SPEC_OUTER_(i_adj_pairs)] * PHASE_VOLUME_JAC_ELEM_OUTER_(i_elem) + 
            (epsilon / layer_thickness_outer) * state[AERO_SPEC_OUTER_(i_adj_pairs)] *
-           LAYER_THICKNESS_JAC_ELEM_OUTER_(i_adj_pairs, i_elem);
+           LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem);
       deriv_outer_prod += ( alpha / eff_sa) * state[AERO_SPEC_INNER_(i_adj_pairs)] *
-           INTERFACE_SURFACE_AREA_JAC_ELEM_(i_adj_pairs, i_elem) - (alpha / volume_phase_outer) * 
-           state[AERO_SPEC_INNER_(i_adj_pairs)] * PHASE_VOLUME_JAC_ELEM_OUTER_(i_adj_pairs, i_elem) - 
+           INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) - (alpha / volume_phase_outer) * 
+           state[AERO_SPEC_INNER_(i_adj_pairs)] * PHASE_VOLUME_JAC_ELEM_OUTER_(i_elem) - 
            (alpha / layer_thickness_outer) * state[AERO_SPEC_INNER_(i_adj_pairs)] *
-           LAYER_THICKNESS_JAC_ELEM_OUTER_(i_adj_pairs, i_elem);
+           LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem);
 
       if (PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem) >= 0) {
         jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem), JACOBIAN_LOSS, deriv_outer_loss);

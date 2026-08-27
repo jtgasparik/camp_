@@ -59,8 +59,9 @@ module camp_rxn_condensed_phase_diffusion
   private
 
 #define NUM_ADJACENT_PAIRS_ this%condensed_data_int(1)
+#define MAX_JAC_ELEM_ this%condensed_data_int(2)
 
-#define NUM_INT_PROP_ 1
+#define NUM_INT_PROP_ 2
 #define NUM_REAL_PROP_ 0
 #define NUM_ENV_PARAM_ 0
 #define BLOCK_SIZE_ 1000
@@ -91,12 +92,12 @@ module camp_rxn_condensed_phase_diffusion
 #define PHASE_JAC_ID_INNER_(x,e) this%condensed_data_int(NUM_INT_PROP_ + 15*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + (e))
 #define PHASE_JAC_ID_OUTER_(x,e) this%condensed_data_int(NUM_INT_PROP_ + 15*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + NUM_JAC_ELEM_INNER_(x) + (e))
 
-#define LAYER_THICKNESS_JAC_ELEM_INNER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + (e))
-#define LAYER_THICKNESS_JAC_ELEM_OUTER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + NUM_JAC_ELEM_INNER_(x) + (e))
+#define LAYER_THICKNESS_JAC_ELEM_INNER_(e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + (e))
+#define LAYER_THICKNESS_JAC_ELEM_OUTER_(e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + MAX_JAC_ELEM_ + (e))
 ! TODO: these are wrong
-#define PHASE_VOLUME_JAC_ELEM_INNER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + (e))
-#define PHASE_VOLUME_JAC_ELEM_OUTER_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + NUM_JAC_ELEM_INNER_(x) + (e))
-#define INTERFACE_SURFACE_AREA_JAC_ELEM_(x,e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + NUM_JAC_ELEM_INNER_(x) + NUM_JAC_ELEM_OUTER_(x) + (e))
+#define PHASE_VOLUME_JAC_ELEM_INNER_(e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + 2*MAX_JAC_ELEM_ + (e))
+#define PHASE_VOLUME_JAC_ELEM_OUTER_(e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + 3*MAX_JAC_ELEM_ + (e))
+#define INTERFACE_SURFACE_AREA_JAC_ELEM_(e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + 4*MAX_JAC_ELEM_ + (e))
 
 
   public :: rxn_condensed_phase_diffusion_t
@@ -166,6 +167,7 @@ contains
     type(index_pair_t), allocatable :: adjacent_phases(:)
     integer(kind=i_kind), allocatable :: phase_ids(:)
     real(kind=dp) :: temp_real
+    integer(kind=i_kind) :: max_jac_elem
 
     ! Get the property set
     if (.not. associated(this%property_set)) call die_msg(300992470, &
@@ -253,6 +255,7 @@ contains
     NUM_ADJACENT_PAIRS_ = num_adjacent_pairs
 
     i_adj_pairs = 0
+    max_jac_elem = 0
     do i_aero_rep = 1, size(aero_rep)
       adjacent_phases = aero_rep(i_aero_rep)%val%adjacent_phases(diffusion_phase_names(1)%string, &
          diffusion_phase_names(SIZE(diffusion_phase_names))%string)
@@ -271,8 +274,11 @@ contains
           NUM_JAC_ELEM_TOTAL_(i_adj_pairs) = NUM_JAC_ELEM_TOTAL_(i_adj_pairs-1) + NUM_JAC_ELEM_INNER_(i_adj_pairs) + NUM_JAC_ELEM_OUTER_(i_adj_pairs)
           NUM_JAC_ELEM_INNER_TOTAL_(i_adj_pairs) = NUM_JAC_ELEM_INNER_TOTAL_(i_adj_pairs-1) + NUM_JAC_ELEM_INNER_(i_adj_pairs)
         end if
+        max_jac_elem = max(max_jac_elem, &
+                            NUM_JAC_ELEM_INNER_(i_adj_pairs) + NUM_JAC_ELEM_OUTER_(i_adj_pairs))
       end do
     end do
+    MAX_JAC_ELEM_ = max_jac_elem
 
     ! Map the diffusing phases and species to the inner and outer phases for each adjacent phase pair. 
     i_adj_pairs = 0
@@ -411,7 +417,6 @@ contains
                  " NUM_JAC_ELEM_INNER_TOTAL_ (cumulative) =", &
                  NUM_JAC_ELEM_INNER_TOTAL_(i_adj_pairs)
     end do
-    print *, "int_data[0]", int_data[0]
 
     deallocate(adj_phase_size)
 
