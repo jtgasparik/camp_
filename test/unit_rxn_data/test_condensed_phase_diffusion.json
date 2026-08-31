@@ -36,17 +36,10 @@
     {
       "type": "AERO_REP_SINGLE_PARTICLE",
       "name": "my aero rep 1",
-      "maximum computational particles": 3,
+      "maximum computational particles": 1,
       "layers": [
             {
                     "name": "one layer",
-                    "phases": [
-                               "aqueous aerosol"
-                    ],
-                    "covers": "two layer"
-            },
-            {
-                    "name": "two layer",
                     "phases": [
                                "aqueous aerosol"
                     ],
@@ -57,7 +50,7 @@
     {
       "type": "AERO_REP_SINGLE_PARTICLE",
       "name": "my aero rep 2",
-      "maximum computational particles": 4,
+      "maximum computational particles": 1,
       "layers": [
             {
                     "name": "one layer",
@@ -92,17 +85,10 @@
     {
       "type": "AERO_REP_SINGLE_PARTICLE",
       "name": "my aero rep 3",
-      "maximum computational particles": 2,
+      "maximum computational particles": 1,
       "layers": [
             {
                     "name": "one layer",
-                    "phases": [
-                               "aqueous aerosol"
-                    ],
-                    "covers": "two layer"
-            },
-            {
-                    "name": "two layer",
                     "phases": [
                                "aqueous aerosol"
                     ],

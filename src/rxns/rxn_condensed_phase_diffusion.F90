@@ -93,11 +93,10 @@ module camp_rxn_condensed_phase_diffusion
 #define PHASE_JAC_ID_OUTER_(x,e) this%condensed_data_int(NUM_INT_PROP_ + 15*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + NUM_JAC_ELEM_INNER_(x) + (e))
 
 #define LAYER_THICKNESS_JAC_ELEM_INNER_(e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + (e))
-#define LAYER_THICKNESS_JAC_ELEM_OUTER_(e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + MAX_JAC_ELEM_ + (e))
-! TODO: these are wrong
-#define PHASE_VOLUME_JAC_ELEM_INNER_(e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + 2*MAX_JAC_ELEM_ + (e))
-#define PHASE_VOLUME_JAC_ELEM_OUTER_(e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + 3*MAX_JAC_ELEM_ + (e))
-#define INTERFACE_SURFACE_AREA_JAC_ELEM_(e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + 4*MAX_JAC_ELEM_ + (e))
+#define LAYER_THICKNESS_JAC_ELEM_OUTER_(e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + 5*MAX_JAC_ELEM_ + (e))
+#define PHASE_VOLUME_JAC_ELEM_INNER_(e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + 10*MAX_JAC_ELEM_ + (e))
+#define PHASE_VOLUME_JAC_ELEM_OUTER_(e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + 15*MAX_JAC_ELEM_ + (e))
+#define INTERFACE_SURFACE_AREA_JAC_ELEM_(e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + 20*MAX_JAC_ELEM_ + (e))
 
 
   public :: rxn_condensed_phase_diffusion_t
@@ -237,8 +236,8 @@ contains
     
     ! Allocate space in the condensed data arrays early so macros can be used
     ! TODO: allocate int data and real data once length is known
-    allocate(this%condensed_data_int(BLOCK_SIZE_ * 20 ))
-    allocate(this%condensed_data_real(BLOCK_SIZE_ * 10 ))
+    allocate(this%condensed_data_int(BLOCK_SIZE_ * 100 ))
+    allocate(this%condensed_data_real(BLOCK_SIZE_ * 100 ))
     this%condensed_data_int(:) = int(0, kind=i_kind)
     this%condensed_data_real(:) = real(0.0, kind=dp)
 
@@ -383,26 +382,26 @@ contains
     end do
 
     ! DEBUG: print all preprocessor variable values/indices for this reaction
-    write(*,*) "[rxn_condensed_phase_diffusion.F90] NUM_ADJACENT_PAIRS_ =", &
-               NUM_ADJACENT_PAIRS_
-    do i_adj_pairs = 1, NUM_ADJACENT_PAIRS_
-      write(*,*) "  pair", i_adj_pairs
-      write(*,*) "    PHASE_ID_INNER_ =", PHASE_ID_INNER_(i_adj_pairs), &
-                 " PHASE_ID_OUTER_ =", PHASE_ID_OUTER_(i_adj_pairs)
-      write(*,*) "    AERO_REP_ID_ =", AERO_REP_ID_(i_adj_pairs)
-      write(*,*) "    DIFF_COEFF_INNER_ =", DIFF_COEFF_INNER_(i_adj_pairs), &
-                 " DIFF_COEFF_OUTER_ =", DIFF_COEFF_OUTER_(i_adj_pairs)
-      write(*,*) "    AERO_SPEC_INNER_ =", AERO_SPEC_INNER_(i_adj_pairs), &
-                 " AERO_SPEC_OUTER_ =", AERO_SPEC_OUTER_(i_adj_pairs)
-      write(*,*) "    NUM_JAC_ELEM_INNER_ =", &
-                 NUM_JAC_ELEM_INNER_(i_adj_pairs), &
-                 " NUM_JAC_ELEM_OUTER_ =", &
-                 NUM_JAC_ELEM_OUTER_(i_adj_pairs)
-      write(*,*) "    NUM_JAC_ELEM_TOTAL_ (cumulative) =", &
-                 NUM_JAC_ELEM_TOTAL_(i_adj_pairs), &
-                 " NUM_JAC_ELEM_INNER_TOTAL_ (cumulative) =", &
-                 NUM_JAC_ELEM_INNER_TOTAL_(i_adj_pairs)
-    end do
+    !write(*,*) "[rxn_condensed_phase_diffusion.F90] NUM_ADJACENT_PAIRS_ =", &
+    !           NUM_ADJACENT_PAIRS_
+    !do i_adj_pairs = 1, NUM_ADJACENT_PAIRS_
+    !  write(*,*) "  pair", i_adj_pairs
+    !  write(*,*) "    PHASE_ID_INNER_ =", PHASE_ID_INNER_(i_adj_pairs), &
+    !             " PHASE_ID_OUTER_ =", PHASE_ID_OUTER_(i_adj_pairs)
+    !  write(*,*) "    AERO_REP_ID_ =", AERO_REP_ID_(i_adj_pairs)
+    !  write(*,*) "    DIFF_COEFF_INNER_ =", DIFF_COEFF_INNER_(i_adj_pairs), &
+    !             " DIFF_COEFF_OUTER_ =", DIFF_COEFF_OUTER_(i_adj_pairs)
+    !  write(*,*) "    AERO_SPEC_INNER_ =", AERO_SPEC_INNER_(i_adj_pairs), &
+    !             " AERO_SPEC_OUTER_ =", AERO_SPEC_OUTER_(i_adj_pairs)
+    !  write(*,*) "    NUM_JAC_ELEM_INNER_ =", &
+    !             NUM_JAC_ELEM_INNER_(i_adj_pairs), &
+    !             " NUM_JAC_ELEM_OUTER_ =", &
+    !             NUM_JAC_ELEM_OUTER_(i_adj_pairs)
+    !  write(*,*) "    NUM_JAC_ELEM_TOTAL_ (cumulative) =", &
+    !             NUM_JAC_ELEM_TOTAL_(i_adj_pairs), &
+    !             " NUM_JAC_ELEM_INNER_TOTAL_ (cumulative) =", &
+    !             NUM_JAC_ELEM_INNER_TOTAL_(i_adj_pairs)
+    !end do
 
     deallocate(adj_phase_size)
 
