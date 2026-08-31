@@ -240,14 +240,14 @@ void rxn_condensed_phase_diffusion_update_ids(ModelData *model_data, int *deriv_
     // representation functions.
     for (int i_adj_pairs = 0; i_adj_pairs < NUM_ADJACENT_PAIRS_; ++i_adj_pairs) {
       for (int i_elem = 0; i_elem < NUM_JAC_ELEM_INNER_(i_adj_pairs); ++i_elem) {
-        if (PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem) > 0) {
+        if (PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem) >= 0) {
           PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem) =
               jacobian_get_element_id(jac, AERO_SPEC_INNER_(i_adj_pairs),
                                       PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem));
         }
       }
       for (int i_elem = 0; i_elem < NUM_JAC_ELEM_OUTER_(i_adj_pairs); ++i_elem) {
-        if (PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem) > 0) {
+        if (PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem) >= 0) {
           PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem) =
               jacobian_get_element_id(jac, AERO_SPEC_OUTER_(i_adj_pairs),
                                       PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem));

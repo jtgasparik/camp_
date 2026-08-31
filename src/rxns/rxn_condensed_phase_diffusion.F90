@@ -188,8 +188,10 @@ contains
 
 
     ! Allocate space for phases and species involved in reaction
-    allocate(diffusion_phase_names(species%size()))
-    allocate(diffusion_species_names(species%size()))
+    !allocate(diffusion_phase_names(species%size()))
+    !allocate(diffusion_species_names(species%size()))
+    allocate(diffusion_phase_names(2))
+    allocate(diffusion_species_names(2))
     
     call species%iter_reset()
     do i_species = 1, species%size()
@@ -219,11 +221,11 @@ contains
 
     ! If only one phase/species pair is found then add that phase/species pair
     ! to the second element of the diffusion_phase_names and diffusion_species_names
-    ! arrays for indexing purposes
-    if (allocated(diffusion_species_names)) then
-      if (size(diffusion_species_names) == 1) then
-        diffusion_phase_names = [diffusion_phase_names, diffusion_phase_names(1)]
-        diffusion_species_names = [diffusion_species_names, diffusion_species_names(1)]
+    ! arrays for indexing purposes.
+    if (allocated(diffusion_species_names) .and. size(diffusion_species_names) .ge. 2) then
+      if (len_trim(diffusion_species_names(2)%string) == 0) then
+        diffusion_phase_names(2) = diffusion_phase_names(1)
+        diffusion_species_names(2) = diffusion_species_names(1)
       end if
     end if
 
@@ -246,7 +248,7 @@ contains
     ! Accumulate adjacent phase pairs from all aerosol representations
     allocate(adj_phase_size(size(aero_rep)))
     num_adjacent_pairs = 0
-    do i_aero_rep = 1, size(aero_rep) 
+    do i_aero_rep = 1, size(aero_rep)
       adjacent_phases = aero_rep(i_aero_rep)%val%adjacent_phases(diffusion_phase_names(1)%string, &
          diffusion_phase_names(SIZE(diffusion_phase_names))%string)
       adj_phase_size(i_aero_rep) = size(adjacent_phases)
@@ -256,9 +258,13 @@ contains
 
     i_adj_pairs = 0
     max_jac_elem = 0
+    allocate(diffusion_phase_names_inner(num_adjacent_pairs))
+    allocate(diffusion_phase_names_outer(num_adjacent_pairs))
+    allocate(diffusion_species_names_inner(num_adjacent_pairs))
+    allocate(diffusion_species_names_outer(num_adjacent_pairs))
     do i_aero_rep = 1, size(aero_rep)
       adjacent_phases = aero_rep(i_aero_rep)%val%adjacent_phases(diffusion_phase_names(1)%string, &
-         diffusion_phase_names(SIZE(diffusion_phase_names))%string)
+          diffusion_phase_names(SIZE(diffusion_phase_names))%string)
       do i = 1, size(adjacent_phases)
         i_adj_pairs = i_adj_pairs + 1
         PHASE_ID_INNER_(i_adj_pairs) = adjacent_phases(i)%first_
@@ -276,21 +282,7 @@ contains
         end if
         max_jac_elem = max(max_jac_elem, &
                             NUM_JAC_ELEM_INNER_(i_adj_pairs) + NUM_JAC_ELEM_OUTER_(i_adj_pairs))
-      end do
-    end do
-    MAX_JAC_ELEM_ = max_jac_elem
 
-    ! Map the diffusing phases and species to the inner and outer phases for each adjacent phase pair. 
-    i_adj_pairs = 0
-    allocate(diffusion_phase_names_inner(num_adjacent_pairs))
-    allocate(diffusion_phase_names_outer(num_adjacent_pairs))
-    allocate(diffusion_species_names_inner(num_adjacent_pairs))
-    allocate(diffusion_species_names_outer(num_adjacent_pairs))
-    do i_aero_rep = 1, size(aero_rep)
-      adjacent_phases = aero_rep(i_aero_rep)%val%adjacent_phases(diffusion_phase_names(1)%string, &
-          diffusion_phase_names(SIZE(diffusion_phase_names))%string)
-      do i = 1, size(adjacent_phases)
-        i_adj_pairs = i_adj_pairs + 1
         inner_phase_name = aero_rep(i_aero_rep)%val%aero_phase(adjacent_phases(i)%first_)%val%name()
         outer_phase_name = aero_rep(i_aero_rep)%val%aero_phase(adjacent_phases(i)%second_)%val%name()
 
@@ -312,8 +304,15 @@ contains
         else
           call die_msg(286189763, "Could not map outer phase name to diffusing species.")
         end if
+
+        AERO_SPEC_INNER_(i_adj_pairs) = aero_rep(i_aero_rep)%val%spec_state_id_by_phase( &
+              adjacent_phases(i)%first_, diffusion_species_names_inner(i_adj_pairs)%string)
+        AERO_SPEC_OUTER_(i_adj_pairs) = aero_rep(i_aero_rep)%val%spec_state_id_by_phase( &
+              adjacent_phases(i)%second_, diffusion_species_names_outer(i_adj_pairs)%string)
       end do
     end do
+    MAX_JAC_ELEM_ = max_jac_elem
+
     if (i_adj_pairs .ne. NUM_ADJACENT_PAIRS_ .or. &
         size(diffusion_phase_names_inner) .ne. NUM_ADJACENT_PAIRS_ .or. &
         size(diffusion_phase_names_outer) .ne. NUM_ADJACENT_PAIRS_ .or. &
@@ -321,19 +320,6 @@ contains
         size(diffusion_species_names_outer) .ne. NUM_ADJACENT_PAIRS_) then
       call die_msg(286189821, "Mismatch between number of adjacent phase pairs and number of diffusion species.")
     end if
-
-    i_adj_pairs = 0
-    do i_aero_rep = 1, size(aero_rep)
-      adjacent_phases = aero_rep(i_aero_rep)%val%adjacent_phases(diffusion_phase_names(1)%string, &
-         diffusion_phase_names(SIZE(diffusion_phase_names))%string)
-      do i = 1, size(adjacent_phases)
-        i_adj_pairs = i_adj_pairs + 1
-        AERO_SPEC_INNER_(i_adj_pairs) = aero_rep(i_aero_rep)%val%spec_state_id_by_phase( &
-              adjacent_phases(i)%first_, diffusion_species_names_inner(i_adj_pairs)%string)
-        AERO_SPEC_OUTER_(i_adj_pairs) = aero_rep(i_aero_rep)%val%spec_state_id_by_phase( &
-              adjacent_phases(i)%second_, diffusion_species_names_outer(i_adj_pairs)%string)
-      end do
-    end do
 
     call assert_msg(051987857, num_adjacent_pairs .gt. 0, &
        "No adjacent phases found condensed phase diffusion reaction.")
