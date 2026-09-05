@@ -37,26 +37,25 @@
 #define NUM_JAC_ELEM_INNER_(x) (int_data[(NUM_INT_PROP_) + (2*NUM_ADJACENT_PAIRS_) + (x)])
 #define NUM_JAC_ELEM_OUTER_(x) (int_data[(NUM_INT_PROP_) + (3*NUM_ADJACENT_PAIRS_) + (x)])
 #define NUM_JAC_ELEM_TOTAL_(x) (int_data[(NUM_INT_PROP_) + (4*NUM_ADJACENT_PAIRS_) + (x)])
-#define NUM_JAC_ELEM_INNER_TOTAL_(x) (int_data[(NUM_INT_PROP_) + (5*NUM_ADJACENT_PAIRS_) + (x)])
-#define AERO_SPEC_INNER_(x) (int_data[(NUM_INT_PROP_) + (6*NUM_ADJACENT_PAIRS_) + (x)]-1)
-#define AERO_SPEC_OUTER_(x) (int_data[(NUM_INT_PROP_) + (7*NUM_ADJACENT_PAIRS_) + (x)]-1)
-#define AERO_REP_ID_(x) (int_data[(NUM_INT_PROP_) + (8*NUM_ADJACENT_PAIRS_) + (x)]-1)
+#define AERO_SPEC_INNER_(x) (int_data[(NUM_INT_PROP_) + (5*NUM_ADJACENT_PAIRS_) + (x)]-1)
+#define AERO_SPEC_OUTER_(x) (int_data[(NUM_INT_PROP_) + (6*NUM_ADJACENT_PAIRS_) + (x)]-1)
+#define AERO_REP_ID_(x) (int_data[(NUM_INT_PROP_) + (7*NUM_ADJACENT_PAIRS_) + (x)]-1)
 
-#define DERIV_ID_INNER_(x) (int_data[(NUM_INT_PROP_) + (9*NUM_ADJACENT_PAIRS_) + (x)])
-#define DERIV_ID_OUTER_(x) (int_data[(NUM_INT_PROP_) + (10*NUM_ADJACENT_PAIRS_) + (x)])
+#define DERIV_ID_INNER_(x) (int_data[(NUM_INT_PROP_) + (8*NUM_ADJACENT_PAIRS_) + (x)])
+#define DERIV_ID_OUTER_(x) (int_data[(NUM_INT_PROP_) + (9*NUM_ADJACENT_PAIRS_) + (x)])
 #define JAC_ID_INNER_INNER_(x) \
-  int_data[(NUM_INT_PROP_) + 11 * (NUM_ADJACENT_PAIRS_) + (x)]
+  int_data[(NUM_INT_PROP_) + 10 * (NUM_ADJACENT_PAIRS_) + (x)]
 #define JAC_ID_INNER_OUTER_(x) \
-  int_data[(NUM_INT_PROP_) + 12 * (NUM_ADJACENT_PAIRS_) + (x)]
+  int_data[(NUM_INT_PROP_) + 11 * (NUM_ADJACENT_PAIRS_) + (x)]
 #define JAC_ID_OUTER_OUTER_(x) \
-  int_data[(NUM_INT_PROP_) + 13 * (NUM_ADJACENT_PAIRS_) + (x)]
+  int_data[(NUM_INT_PROP_) + 12 * (NUM_ADJACENT_PAIRS_) + (x)]
 #define JAC_ID_OUTER_INNER_(x) \
-  int_data[(NUM_INT_PROP_) + 14 * (NUM_ADJACENT_PAIRS_) + (x)]
+  int_data[(NUM_INT_PROP_) + 13 * (NUM_ADJACENT_PAIRS_) + (x)]
 
 #define PHASE_JAC_ID_INNER_(x, e) \
-  int_data[(NUM_INT_PROP_) + 15 * (NUM_ADJACENT_PAIRS_) + NUM_JAC_ELEM_TOTAL_(x) + (e)]
+  int_data[(NUM_INT_PROP_) + 14 * (NUM_ADJACENT_PAIRS_) + NUM_JAC_ELEM_TOTAL_(x) + (e)]
 #define PHASE_JAC_ID_OUTER_(x, e) \
-  int_data[(NUM_INT_PROP_) + 15 * (NUM_ADJACENT_PAIRS_) + NUM_JAC_ELEM_TOTAL_(x) + NUM_JAC_ELEM_INNER_(x) + (e)]
+  int_data[(NUM_INT_PROP_) + 14 * (NUM_ADJACENT_PAIRS_) + NUM_JAC_ELEM_TOTAL_(x) + NUM_JAC_ELEM_INNER_(x) + (e)]
 
 #define LAYER_THICKNESS_JAC_ELEM_INNER_(e) \
   (float_data[(NUM_FLOAT_PROP_) + 2 * (NUM_ADJACENT_PAIRS_) + (e)])
@@ -272,10 +271,8 @@ void rxn_condensed_phase_diffusion_update_ids(ModelData *model_data, int *deriv_
   //         "NUM_JAC_ELEM_OUTER_ = %d\n",
   //         NUM_JAC_ELEM_INNER_(i_adj_pairs),
 //           NUM_JAC_ELEM_OUTER_(i_adj_pairs));
-//    printf("    NUM_JAC_ELEM_TOTAL_ (cumulative) = %d, "
- //          "NUM_JAC_ELEM_INNER_TOTAL_ (cumulative) = %d\n",
-  //         NUM_JAC_ELEM_TOTAL_(i_adj_pairs),
-  //         NUM_JAC_ELEM_INNER_TOTAL_(i_adj_pairs));
+  //    printf("    NUM_JAC_ELEM_TOTAL_ (cumulative) = %d\n",
+  //         NUM_JAC_ELEM_TOTAL_(i_adj_pairs));
   //  for (int i_elem = 0; i_elem < NUM_JAC_ELEM_INNER_(i_adj_pairs);
   //       ++i_elem) {
   //    printf("      PHASE_JAC_ID_INNER_(%d, %d) = %d\n", i_adj_pairs, i_elem,
@@ -521,22 +518,22 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
     for (int i_elem = 0; i_elem < NUM_JAC_ELEM_INNER_(i_adj_pairs); ++i_elem) {
       if (PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem) < 0) continue;
 
-      // gamma (Y' loss process): d_loss = -d(-gamma)/dX = gamma/A*dA/dX - gamma/V'*dV'/dX - gamma/Delta'*dDelta'/dX
-      realtype d_loss = (-rate_inner_loss / eff_sa *
-                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) +
+      // gamma (Y' loss process): registered to LOSS, so value must be -d(-gamma)/dX = gamma/A*dA/dX - gamma/V'*dV'/dX - gamma/Delta'*dDelta'/dX
+      realtype d_loss = (rate_inner_loss / eff_sa *
+                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) -
                          rate_inner_loss / volume_phase_inner *
-                             PHASE_VOLUME_JAC_ELEM_INNER_(i_elem) +
+                             PHASE_VOLUME_JAC_ELEM_INNER_(i_elem) -
                          rate_inner_loss / layer_thickness_inner *
                              LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)) *
                         state[AERO_SPEC_INNER_(i_adj_pairs)];
 
-      // beta (Y' gain process): d_prod = beta/A*dA/dX - beta/V'*dV'/dX
-      realtype d_prod = (rate_inner_prod / eff_sa *
-                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) -
+      // beta (Y' gain process): registered to PRODUCTION directly
+      realtype d_prod = (-rate_inner_prod / eff_sa *
+                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) +
                          rate_inner_prod / volume_phase_inner *
-                             PHASE_VOLUME_JAC_ELEM_INNER_(i_elem) -
-                         rate_inner_prod / layer_thickness_inner *
-                             LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)) *
+                             PHASE_VOLUME_JAC_ELEM_INNER_(i_elem) +
+                         rate_inner_prod / layer_thickness_outer *
+                             LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem)) *
                         state[AERO_SPEC_OUTER_(i_adj_pairs)];
 
       jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem),
@@ -547,22 +544,22 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
     for (int i_elem = 0; i_elem < NUM_JAC_ELEM_OUTER_(i_adj_pairs); ++i_elem) {
       if (PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem) < 0) continue;
 
-      // epsilon (Y'' loss process): d_loss = epsilon/A*dA/dX - epsilon/V''*dV''/dX - epsilon/Delta''*dDelta''/dX
-      realtype d_loss = (-rate_outer_loss / eff_sa *
-                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) +
+      // epsilon (Y'' loss process): registered to LOSS, so value must be -d(-epsilon)/dX = epsilon/A*dA/dX - epsilon/V''*dV''/dX - epsilon/Delta''*dDelta''/dX
+      realtype d_loss = (rate_outer_loss / eff_sa *
+                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) -
                          rate_outer_loss / volume_phase_outer *
-                             PHASE_VOLUME_JAC_ELEM_OUTER_(i_elem) +
+                             PHASE_VOLUME_JAC_ELEM_OUTER_(i_elem) -
                          rate_outer_loss / layer_thickness_outer *
                              LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem)) *
                         state[AERO_SPEC_OUTER_(i_adj_pairs)];
 
-      // alpha (Y'' gain process): d_prod = alpha/A*dA/dX - alpha/V''*dV''/dX
-      realtype d_prod = (rate_outer_prod / eff_sa *
-                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) -
+      // alpha (Y'' gain process): registered to PRODUCTION directly, alpha has no Delta'' dependence
+      realtype d_prod = (- rate_outer_prod / eff_sa *
+                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) +
                          rate_outer_prod / volume_phase_outer *
-                             PHASE_VOLUME_JAC_ELEM_OUTER_(i_elem) - 
-                         rate_outer_prod / layer_thickness_outer *
-                             LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem)) *
+                             PHASE_VOLUME_JAC_ELEM_OUTER_(i_elem) +
+                         rate_outer_prod / layer_thickness_inner *
+                             LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)) *
                         state[AERO_SPEC_INNER_(i_adj_pairs)];
 
       jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem),

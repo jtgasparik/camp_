@@ -76,21 +76,20 @@ module camp_rxn_condensed_phase_diffusion
 #define NUM_JAC_ELEM_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 3*NUM_ADJACENT_PAIRS_ + (x))
 ! Cumulative sum of the number of Jacobian elements for each pair, used to index into the condensed_data_real array
 #define NUM_JAC_ELEM_TOTAL_(x) this%condensed_data_int(NUM_INT_PROP_ + 4*NUM_ADJACENT_PAIRS_ + (x))
-#define NUM_JAC_ELEM_INNER_TOTAL_(x) this%condensed_data_int(NUM_INT_PROP_ + 5*NUM_ADJACENT_PAIRS_ + (x))
-#define AERO_SPEC_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 6*NUM_ADJACENT_PAIRS_ + (x))
-#define AERO_SPEC_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 7*NUM_ADJACENT_PAIRS_ + (x))
-#define AERO_REP_ID_(x) this%condensed_data_int(NUM_INT_PROP_ + 8*NUM_ADJACENT_PAIRS_ + (x))
+#define AERO_SPEC_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 5*NUM_ADJACENT_PAIRS_ + (x))
+#define AERO_SPEC_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 6*NUM_ADJACENT_PAIRS_ + (x))
+#define AERO_REP_ID_(x) this%condensed_data_int(NUM_INT_PROP_ + 7*NUM_ADJACENT_PAIRS_ + (x))
 
-#define DERIV_ID_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 9*NUM_ADJACENT_PAIRS_ + (x))
-#define DERIV_ID_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 10*NUM_ADJACENT_PAIRS_ + (x))
+#define DERIV_ID_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 8*NUM_ADJACENT_PAIRS_ + (x))
+#define DERIV_ID_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 9*NUM_ADJACENT_PAIRS_ + (x))
 ! Direct Jacobian slots for the 2x2 inner/outer block for each pair
-#define JAC_ID_INNER_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 11*NUM_ADJACENT_PAIRS_ + (x))
-#define JAC_ID_INNER_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 12*NUM_ADJACENT_PAIRS_ + (x))
-#define JAC_ID_OUTER_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 13*NUM_ADJACENT_PAIRS_ + (x))
-#define JAC_ID_OUTER_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 14*NUM_ADJACENT_PAIRS_ + (x))
+#define JAC_ID_INNER_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 10*NUM_ADJACENT_PAIRS_ + (x))
+#define JAC_ID_INNER_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 11*NUM_ADJACENT_PAIRS_ + (x))
+#define JAC_ID_OUTER_OUTER_(x) this%condensed_data_int(NUM_INT_PROP_ + 12*NUM_ADJACENT_PAIRS_ + (x))
+#define JAC_ID_OUTER_INNER_(x) this%condensed_data_int(NUM_INT_PROP_ + 13*NUM_ADJACENT_PAIRS_ + (x))
 
-#define PHASE_JAC_ID_INNER_(x,e) this%condensed_data_int(NUM_INT_PROP_ + 15*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + (e))
-#define PHASE_JAC_ID_OUTER_(x,e) this%condensed_data_int(NUM_INT_PROP_ + 15*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + NUM_JAC_ELEM_INNER_(x) + (e))
+#define PHASE_JAC_ID_INNER_(x,e) this%condensed_data_int(NUM_INT_PROP_ + 14*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + (e))
+#define PHASE_JAC_ID_OUTER_(x,e) this%condensed_data_int(NUM_INT_PROP_ + 14*NUM_ADJACENT_PAIRS_ + NUM_JAC_ELEM_TOTAL_(x) + NUM_JAC_ELEM_INNER_(x) + (e))
 
 #define LAYER_THICKNESS_JAC_ELEM_INNER_(e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + (e))
 #define LAYER_THICKNESS_JAC_ELEM_OUTER_(e) this%condensed_data_real(NUM_REAL_PROP_ + 2*NUM_ADJACENT_PAIRS_ + 5*MAX_JAC_ELEM_ + (e))
@@ -274,10 +273,8 @@ contains
         ! Cumulative sum of the number of Jacobian elements for each adjacent phase pair, used to index into the condensed_data_real array
         if (i_adj_pairs == 1) then
           NUM_JAC_ELEM_TOTAL_(i_adj_pairs) = 0
-          NUM_JAC_ELEM_INNER_TOTAL_(i_adj_pairs) = 0
         else
           NUM_JAC_ELEM_TOTAL_(i_adj_pairs) = NUM_JAC_ELEM_TOTAL_(i_adj_pairs-1) + NUM_JAC_ELEM_INNER_(i_adj_pairs) + NUM_JAC_ELEM_OUTER_(i_adj_pairs)
-          NUM_JAC_ELEM_INNER_TOTAL_(i_adj_pairs) = NUM_JAC_ELEM_INNER_TOTAL_(i_adj_pairs-1) + NUM_JAC_ELEM_INNER_(i_adj_pairs)
         end if
         max_jac_elem = max(max_jac_elem, &
                             NUM_JAC_ELEM_INNER_(i_adj_pairs) + NUM_JAC_ELEM_OUTER_(i_adj_pairs))
@@ -398,9 +395,7 @@ contains
     !             " NUM_JAC_ELEM_OUTER_ =", &
     !             NUM_JAC_ELEM_OUTER_(i_adj_pairs)
     !  write(*,*) "    NUM_JAC_ELEM_TOTAL_ (cumulative) =", &
-    !             NUM_JAC_ELEM_TOTAL_(i_adj_pairs), &
-    !             " NUM_JAC_ELEM_INNER_TOTAL_ (cumulative) =", &
-    !             NUM_JAC_ELEM_INNER_TOTAL_(i_adj_pairs)
+    !             NUM_JAC_ELEM_TOTAL_(i_adj_pairs)
     !end do
 
     deallocate(adj_phase_size)

@@ -141,7 +141,7 @@ contains
 
     ! Allocate space for the results
     if (scenario.eq.1) then
-      num_state_var = 12
+      num_state_var = 52
     else if (scenario.eq.2) then
       num_state_var = 8
     end if
@@ -444,20 +444,49 @@ contains
         call camp_core%solve(camp_state, time_step, &
                               solver_stats = solver_stats)
         model_conc(i_time,:) = camp_state%state_var(:)
-        if (camp_mpi_rank().eq.0) then
-          write(*,*) "Solver statistics for scenario ", scenario, &
-                     ", time step ", i_time
-          call solver_stats%print()
-        end if
-      end do
 
 #ifdef CAMP_DEBUG
         ! Check the Jacobian evaluations
-        !call assert_msg(567403530, solver_stats%Jac_eval_fails.eq.0, &
-        !                trim( to_string( solver_stats%Jac_eval_fails ) )// &
-        !                " Jacobian evaluation failures at time step "// &
-        !                trim( to_string( i_time ) ) )
+        call assert_msg(932294096, solver_stats%Jac_eval_fails.eq.0, &
+                        trim( to_string( solver_stats%Jac_eval_fails ) )// &
+                        " Jacobian evaluation failures at time step "// &
+                        trim( to_string( i_time ) ) )
 #endif
+
+      end do
+
+      ! Save the model results
+      if (scenario.eq.1) then
+        open(unit=9, file="out/condensed_phase_diffusion_results.txt", &
+             status="replace", action="write")
+      else if (scenario.eq.2) then
+        open(unit=7, file="out/condensed_phase_diffusion_results_2.txt", &
+             status="replace", action="write")
+      end if
+      do i_time = 0, NUM_TIME_STEP
+        if (scenario.eq.1) then
+          write(9,*) i_time*time_step, &
+               ' ', model_conc(i_time, idx_solute_l0), &
+               ' ', model_conc(i_time, idx_solute_l1), &
+               ' ', model_conc(i_time, idx_solute_l2), &
+               ' ', model_conc(i_time, idx_solute_l3), &
+               ' ', model_conc(i_time, idx_H2O_l0), &
+               ' ', model_conc(i_time, idx_H2O_l1), &
+               ' ', model_conc(i_time, idx_H2O_l2), &
+               ' ', model_conc(i_time, idx_H2O_l3)
+        else if (scenario.eq.2) then
+          write(7,*) i_time*time_step, &
+               ' ', model_conc(i_time, idx_solute_l0), &
+               ' ', model_conc(i_time, idx_solute_l1), &
+               ' ', model_conc(i_time, idx_org_l0), &
+               ' ', model_conc(i_time, idx_org_l1)
+        end if
+      end do
+      if (scenario.eq.1) then
+        close(9)
+      else if (scenario.eq.2) then
+        close(7)
+      end if
 
       ! Test diffusion coefficients
       key = "condensed phase diffusion"
@@ -495,19 +524,19 @@ contains
                 diff_coeff_outer(i) = rxn_diffusion%condensed_data_real(num_adjacent_pairs + i)
                 phase_id_inner(i) = rxn_diffusion%condensed_data_int(i + num_int_prop)
                 phase_id_outer(i) = rxn_diffusion%condensed_data_int(num_adjacent_pairs + i + num_int_prop)
-                aero_spec_inner(i) = rxn_diffusion%condensed_data_int((6 * num_adjacent_pairs) + i + num_int_prop)
-                aero_spec_outer(i) = rxn_diffusion%condensed_data_int((7 * num_adjacent_pairs) + i + num_int_prop)
+                aero_spec_inner(i) = rxn_diffusion%condensed_data_int((5 * num_adjacent_pairs) + i + num_int_prop)
+                aero_spec_outer(i) = rxn_diffusion%condensed_data_int((6 * num_adjacent_pairs) + i + num_int_prop)
               end do
               
               ! Test that all diffusion coefficients match the expected value
               diff_coeff_expected = 1.5d-5
               if (scenario.eq.1) then
-                call assert_msg(065137454, num_adjacent_pairs.eq.3, &
+                call assert_msg(065137454, num_adjacent_pairs.eq.17, &
                                 "Unexpected adjacent phase pair count: "//trim(to_string(num_adjacent_pairs)))
-                phase_id_inner_expected = (/1,2,3/)
-                phase_id_outer_expected = (/2,3,4/)
-                aero_spec_inner_expected = (/3,5,7/)
-                aero_spec_outer_expected = (/5,7,9/)
+                phase_id_inner_expected = (/1,3,5,1,2,3,5,6,7,9,10,11,13,14,15,1,3/)
+                phase_id_outer_expected = (/2,4,6,2,3,4,6,7,8,10,11,12,14,15,16,2,4/)
+                aero_spec_inner_expected = (/1,5,9,13,15,17,21,23,25,29,31,33,37,39,41,45,49/)
+                aero_spec_outer_expected = (/3,7,11,15,17,19,23,25,27,31,33,35,39,41,43,47,51/)
                 do i = 1, num_adjacent_pairs
                   call assert_msg(449021345, almost_equal(diff_coeff_inner(i), diff_coeff_expected, 1.0d-15), &
                                   "DIFF_COEFF_INNER_ for pair "//trim(to_string(i))//" is "// &
@@ -602,16 +631,16 @@ contains
 
                 ! Calculate expected rate_inner
                 expected_rate_inner = (surface_area_l2 / volume_phase_l2) * ( &
-                  (-diff_coeff_inner(1) / layer_thickness_l2) * true_conc(0,idx_solute_l2) + &
-                  (diff_coeff_outer(1) / layer_thickness_l3) * true_conc(0,idx_solute_l3) )
+                  (-diff_coeff_inner(6) / layer_thickness_l2) * true_conc(0,idx_solute_l2) + &
+                  (diff_coeff_outer(6) / layer_thickness_l3) * true_conc(0,idx_solute_l3) )
                 call assert_msg(470271032, almost_equal(1.37301d-7, expected_rate_inner, test_tolerance), &
                       "rate_inner is expected "// &
                       trim(to_string(expected_rate_inner)))
 
                 ! Calculate expected rate_outer
                 expected_rate_outer = (surface_area_l2 / volume_phase_l3) * ( &
-                  (diff_coeff_inner(1) / layer_thickness_l2) * true_conc(0,idx_solute_l2) - &
-                  (diff_coeff_outer(1) / layer_thickness_l3) * true_conc(0,idx_solute_l3) )
+                  (diff_coeff_inner(6) / layer_thickness_l2) * true_conc(0,idx_solute_l2) - &
+                  (diff_coeff_outer(6) / layer_thickness_l3) * true_conc(0,idx_solute_l3) )
                 call assert_msg(994658337, almost_equal(-9.56945d-8, expected_rate_outer, test_tolerance), &
                       "rate_outer is expected "// &
                       trim(to_string(expected_rate_outer)))
