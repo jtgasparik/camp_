@@ -434,7 +434,7 @@ contains
 
 #ifdef CAMP_DEBUG
       ! Evaluate the Jacobian during solving
-      !solver_stats%eval_Jac = .true.
+      solver_stats%eval_Jac = .true.
 #endif
 
       ! Integrate the mechanism
@@ -445,6 +445,9 @@ contains
                               solver_stats = solver_stats)
         model_conc(i_time,:) = camp_state%state_var(:)
         if (camp_mpi_rank().eq.0) then
+          write(*,*) "Solver statistics for scenario ", scenario, &
+                     ", time step ", i_time
+          call solver_stats%print()
         end if
       end do
 

@@ -498,63 +498,77 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
 
     rate_outer_prod *= ((DIFF_COEFF_INNER_(i_adj_pairs) / layer_thickness_inner));
 
+    // rate_inner_loss = gamma = A*D'*[X']/(Delta'*V'), rate_inner_prod = beta = A*D''*[X'']/(Delta''*V')
+    // rate_outer_loss = epsilon = A*D''*[X'']/(Delta''*V''), rate_outer_prod = alpha = A*D'*[X']/(Delta'*V'')
+    // Direct dependence on the reacting species themselves (dY/d[X] terms)
     if (JAC_ID_INNER_INNER_(i_adj_pairs) >= 0) {
-      jacobian_add_value(jac, (unsigned int)JAC_ID_INNER_INNER_(i_adj_pairs), JACOBIAN_LOSS, -rate_inner_loss);
+      jacobian_add_value(jac, (unsigned int)JAC_ID_INNER_INNER_(i_adj_pairs), JACOBIAN_LOSS, rate_inner_loss);
     }
     if (JAC_ID_INNER_OUTER_(i_adj_pairs) >= 0) {
       jacobian_add_value(jac, (unsigned int)JAC_ID_INNER_OUTER_(i_adj_pairs), JACOBIAN_PRODUCTION, rate_inner_prod);
     }
     if (JAC_ID_OUTER_OUTER_(i_adj_pairs) >= 0) {
-      jacobian_add_value(jac, (unsigned int)JAC_ID_OUTER_OUTER_(i_adj_pairs), JACOBIAN_LOSS, -rate_outer_loss);
+      jacobian_add_value(jac, (unsigned int)JAC_ID_OUTER_OUTER_(i_adj_pairs), JACOBIAN_LOSS, rate_outer_loss);
     }
     if (JAC_ID_OUTER_INNER_(i_adj_pairs) >= 0) {
       jacobian_add_value(jac, (unsigned int)JAC_ID_OUTER_INNER_(i_adj_pairs), JACOBIAN_PRODUCTION, rate_outer_prod);
     }
 
-    realtype gamma = (eff_sa * DIFF_COEFF_INNER_(i_adj_pairs)) / (layer_thickness_inner * layer_thickness_inner);
-    realtype alpha = (eff_sa * DIFF_COEFF_INNER_(i_adj_pairs)) / (layer_thickness_inner * volume_phase_outer);
-    realtype epsilon = (eff_sa * DIFF_COEFF_OUTER_(i_adj_pairs)) / (layer_thickness_outer * volume_phase_outer);
-    realtype beta = (eff_sa * DIFF_COEFF_OUTER_(i_adj_pairs)) / (layer_thickness_outer * volume_phase_inner);
-
-    realtype deriv_inner_loss = -(gamma * state[AERO_SPEC_INNER_(i_adj_pairs)]);
-    realtype deriv_inner_prod = (beta * state[AERO_SPEC_OUTER_(i_adj_pairs)]);
-    realtype deriv_outer_loss = -(epsilon * state[AERO_SPEC_OUTER_(i_adj_pairs)]);
-    realtype deriv_outer_prod = (alpha * state[AERO_SPEC_INNER_(i_adj_pairs)]);
-
+    // Geometry-dependent terms (dY/dX_ijk from A, V', V'', Delta', Delta'' chain rule).
+    // Only entries registered by rxn_condensed_phase_diffusion_get_used_jac_elem exist:
+    // PHASE_JAC_ID_INNER_ covers d[X']/dX and PHASE_JAC_ID_OUTER_ covers d[X'']/dX, so the
+    // beta/Delta'' and alpha/Delta' cross-phase terms cannot be represented here.
     for (int i_elem = 0; i_elem < NUM_JAC_ELEM_INNER_(i_adj_pairs); ++i_elem) {
-      deriv_inner_loss += ( - gamma / eff_sa) * state[AERO_SPEC_INNER_(i_adj_pairs)] *
-           INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) + 
-           (gamma / volume_phase_inner) * state[AERO_SPEC_INNER_(i_adj_pairs)] * 
-           PHASE_VOLUME_JAC_ELEM_INNER_(i_elem) + ( gamma / layer_thickness_inner ) * 
-           state[AERO_SPEC_INNER_(i_adj_pairs)] * LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem);
-      deriv_inner_prod += ( beta / eff_sa) * state[AERO_SPEC_OUTER_(i_adj_pairs)] *
-           INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) - (beta / volume_phase_inner) * 
-           state[AERO_SPEC_OUTER_(i_adj_pairs)] * PHASE_VOLUME_JAC_ELEM_INNER_(i_elem) - 
-           ( beta / layer_thickness_inner ) * state[AERO_SPEC_OUTER_(i_adj_pairs)] * 
-           LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem);
+      if (PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem) < 0) continue;
 
-      if (PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem) >= 0) {
-        jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem), JACOBIAN_LOSS, deriv_inner_loss);
-        jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem), JACOBIAN_PRODUCTION, deriv_inner_prod);
-      }
+      // gamma (Y' loss process): d_loss = -d(-gamma)/dX = gamma/A*dA/dX - gamma/V'*dV'/dX - gamma/Delta'*dDelta'/dX
+      realtype d_loss = (-rate_inner_loss / eff_sa *
+                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) +
+                         rate_inner_loss / volume_phase_inner *
+                             PHASE_VOLUME_JAC_ELEM_INNER_(i_elem) +
+                         rate_inner_loss / layer_thickness_inner *
+                             LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)) *
+                        state[AERO_SPEC_INNER_(i_adj_pairs)];
 
+      // beta (Y' gain process): d_prod = beta/A*dA/dX - beta/V'*dV'/dX
+      realtype d_prod = (rate_inner_prod / eff_sa *
+                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) -
+                         rate_inner_prod / volume_phase_inner *
+                             PHASE_VOLUME_JAC_ELEM_INNER_(i_elem) -
+                         rate_inner_prod / layer_thickness_inner *
+                             LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)) *
+                        state[AERO_SPEC_OUTER_(i_adj_pairs)];
+
+      jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem),
+                         JACOBIAN_LOSS, d_loss);
+      jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem),
+                         JACOBIAN_PRODUCTION, d_prod);
     }
     for (int i_elem = 0; i_elem < NUM_JAC_ELEM_OUTER_(i_adj_pairs); ++i_elem) {
-      deriv_outer_loss += ( - epsilon / eff_sa) * state[AERO_SPEC_OUTER_(i_adj_pairs)] *
-           INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) + (epsilon / volume_phase_outer) * 
-           state[AERO_SPEC_OUTER_(i_adj_pairs)] * PHASE_VOLUME_JAC_ELEM_OUTER_(i_elem) + 
-           (epsilon / layer_thickness_outer) * state[AERO_SPEC_OUTER_(i_adj_pairs)] *
-           LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem);
-      deriv_outer_prod += ( alpha / eff_sa) * state[AERO_SPEC_INNER_(i_adj_pairs)] *
-           INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) - (alpha / volume_phase_outer) * 
-           state[AERO_SPEC_INNER_(i_adj_pairs)] * PHASE_VOLUME_JAC_ELEM_OUTER_(i_elem) - 
-           (alpha / layer_thickness_outer) * state[AERO_SPEC_INNER_(i_adj_pairs)] *
-           LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem);
+      if (PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem) < 0) continue;
 
-      if (PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem) >= 0) {
-        jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem), JACOBIAN_LOSS, deriv_outer_loss);
-        jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem), JACOBIAN_PRODUCTION, deriv_outer_prod);
-      }
+      // epsilon (Y'' loss process): d_loss = epsilon/A*dA/dX - epsilon/V''*dV''/dX - epsilon/Delta''*dDelta''/dX
+      realtype d_loss = (-rate_outer_loss / eff_sa *
+                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) +
+                         rate_outer_loss / volume_phase_outer *
+                             PHASE_VOLUME_JAC_ELEM_OUTER_(i_elem) +
+                         rate_outer_loss / layer_thickness_outer *
+                             LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem)) *
+                        state[AERO_SPEC_OUTER_(i_adj_pairs)];
+
+      // alpha (Y'' gain process): d_prod = alpha/A*dA/dX - alpha/V''*dV''/dX
+      realtype d_prod = (rate_outer_prod / eff_sa *
+                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) -
+                         rate_outer_prod / volume_phase_outer *
+                             PHASE_VOLUME_JAC_ELEM_OUTER_(i_elem) - 
+                         rate_outer_prod / layer_thickness_outer *
+                             LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem)) *
+                        state[AERO_SPEC_INNER_(i_adj_pairs)];
+
+      jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem),
+                         JACOBIAN_LOSS, d_loss);
+      jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem),
+                         JACOBIAN_PRODUCTION, d_prod);
     }
   }
     return;
