@@ -519,20 +519,20 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
       if (PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem) < 0) continue;
 
       // gamma (Y' loss process): registered to LOSS, so value must be -d(-gamma)/dX = gamma/A*dA/dX - gamma/V'*dV'/dX - gamma/Delta'*dDelta'/dX
-      realtype d_loss = (rate_inner_loss / eff_sa *
-                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) -
-                         rate_inner_loss / volume_phase_inner *
-                             PHASE_VOLUME_JAC_ELEM_INNER_(i_elem) -
-                         rate_inner_loss / layer_thickness_inner *
+      realtype d_loss = ( - (rate_inner_loss / eff_sa) *
+                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) +
+                         (rate_inner_loss / volume_phase_inner) *
+                             PHASE_VOLUME_JAC_ELEM_INNER_(i_elem) +
+                         (rate_inner_loss / layer_thickness_inner) *
                              LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)) *
                         state[AERO_SPEC_INNER_(i_adj_pairs)];
 
       // beta (Y' gain process): registered to PRODUCTION directly
-      realtype d_prod = (-rate_inner_prod / eff_sa *
-                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) +
-                         rate_inner_prod / volume_phase_inner *
-                             PHASE_VOLUME_JAC_ELEM_INNER_(i_elem) +
-                         rate_inner_prod / layer_thickness_outer *
+      realtype d_prod = ( (rate_inner_prod / eff_sa) *
+                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) -
+                         (rate_inner_prod / volume_phase_inner) *
+                             PHASE_VOLUME_JAC_ELEM_INNER_(i_elem) -
+                         (rate_inner_prod / layer_thickness_outer) *
                              LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem)) *
                         state[AERO_SPEC_OUTER_(i_adj_pairs)];
 
@@ -545,20 +545,20 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
       if (PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem) < 0) continue;
 
       // epsilon (Y'' loss process): registered to LOSS, so value must be -d(-epsilon)/dX = epsilon/A*dA/dX - epsilon/V''*dV''/dX - epsilon/Delta''*dDelta''/dX
-      realtype d_loss = (rate_outer_loss / eff_sa *
-                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) -
-                         rate_outer_loss / volume_phase_outer *
-                             PHASE_VOLUME_JAC_ELEM_OUTER_(i_elem) -
-                         rate_outer_loss / layer_thickness_outer *
+      realtype d_loss = ( - (rate_outer_loss / eff_sa) *
+                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) +
+                         (rate_outer_loss / volume_phase_outer) *
+                             PHASE_VOLUME_JAC_ELEM_OUTER_(i_elem) +
+                         (rate_outer_loss / layer_thickness_outer) *
                              LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem)) *
                         state[AERO_SPEC_OUTER_(i_adj_pairs)];
 
       // alpha (Y'' gain process): registered to PRODUCTION directly, alpha has no Delta'' dependence
-      realtype d_prod = (- rate_outer_prod / eff_sa *
-                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) +
-                         rate_outer_prod / volume_phase_outer *
-                             PHASE_VOLUME_JAC_ELEM_OUTER_(i_elem) +
-                         rate_outer_prod / layer_thickness_inner *
+      realtype d_prod = ( (rate_outer_prod / eff_sa) *
+                             INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) -
+                         (rate_outer_prod / volume_phase_outer) *
+                             PHASE_VOLUME_JAC_ELEM_OUTER_(i_elem) -
+                         (rate_outer_prod / layer_thickness_inner) *
                              LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)) *
                         state[AERO_SPEC_INNER_(i_adj_pairs)];
 
