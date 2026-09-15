@@ -155,7 +155,7 @@ contains
     !!! JJJ: Where is the size of the particle specified???
 
     ! Set output time step (s)
-    time_step = 10.0
+    time_step = 1.0
 
 #ifdef CAMP_USE_MPI
     ! Load the model data on root process and pass it to process 1 for solving
@@ -335,7 +335,12 @@ contains
         true_conc(:,idx_org_l0) = 2.0d-2
         true_conc(:,idx_org_l1) = 2.0d-3
       end if
-      number_conc = 1.3e6         ! particle number concentration (#/cc)
+      if (scenario.eq.1) then
+        number_conc = 1.3e6         ! particle number concentration (#/cc)
+      else if (scenario.eq.2) then
+        ! fewer, larger particles give thicker layers, easing solver stiffness
+        number_conc = 1.3e3         ! particle number concentration (#/cc)
+      end if
       true_conc(0,:) = true_conc(0,:) / (number_conc * 1000.0) ! convert to kg/m3 per particle
       model_conc(0,:) = true_conc(0,:)
 
@@ -573,8 +578,8 @@ contains
                                 "Unexpected adjacent phase pair count: "//trim(to_string(num_adjacent_pairs)))
                 allocate(diff_coeff_inner_expected(num_adjacent_pairs))
                 allocate(diff_coeff_outer_expected(num_adjacent_pairs))
-                diff_coeff_inner_expected = (/1.5d-8, 1.0d-8, 1.5d-8, 1.0d-8/)
-                diff_coeff_outer_expected = (/1.0d-8, 1.5d-8, 1.0d-8, 1.5d-8/)
+                diff_coeff_inner_expected = (/1.5d-10, 1.0d-10, 1.5d-10, 1.0d-10/)
+                diff_coeff_outer_expected = (/1.0d-10, 1.5d-10, 1.0d-10, 1.5d-10/)
                 phase_id_inner_expected = (/1,2,5,6/)
                 phase_id_outer_expected = (/4,3,8,7/)
                 aero_spec_inner_expected = (/1,2,5,6/)

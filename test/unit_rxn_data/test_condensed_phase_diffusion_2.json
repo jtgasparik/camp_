@@ -27,7 +27,7 @@
       "species": [
         {
           "name": "solute_aq",
-          "diffusion coefficient [m2 s-1]": 1.5e-8
+          "diffusion coefficient [m2 s-1]": 1.5e-10
         }
       ]
     },
@@ -37,7 +37,7 @@
       "species": [
         {
           "name": "organic_sp",
-          "diffusion coefficient [m2 s-1]": 1.0e-8
+          "diffusion coefficient [m2 s-1]": 1.0e-10
         }
       ]
     },

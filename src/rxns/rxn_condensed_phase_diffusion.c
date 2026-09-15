@@ -525,7 +525,7 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
                              PHASE_VOLUME_JAC_ELEM_INNER_(i_elem) +
                          (rate_inner_loss / layer_thickness_inner) *
                              LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)) *
-                        state[AERO_SPEC_INNER_(i_adj_pairs)];
+                         state[AERO_SPEC_INNER_(i_adj_pairs)];
 
       // beta (Y' gain process): registered to PRODUCTION directly
       realtype d_prod = ( (rate_inner_prod / eff_sa) *
@@ -534,7 +534,7 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
                              PHASE_VOLUME_JAC_ELEM_INNER_(i_elem) -
                          (rate_inner_prod / layer_thickness_outer) *
                              LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem)) *
-                        state[AERO_SPEC_OUTER_(i_adj_pairs)];
+                         state[AERO_SPEC_OUTER_(i_adj_pairs)];
 
       jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem),
                          JACOBIAN_LOSS, d_loss);
@@ -551,7 +551,7 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
                              PHASE_VOLUME_JAC_ELEM_OUTER_(i_elem) +
                          (rate_outer_loss / layer_thickness_outer) *
                              LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem)) *
-                        state[AERO_SPEC_OUTER_(i_adj_pairs)];
+                         state[AERO_SPEC_OUTER_(i_adj_pairs)];
 
       // alpha (Y'' gain process): registered to PRODUCTION directly, alpha has no Delta'' dependence
       realtype d_prod = ( (rate_outer_prod / eff_sa) *
@@ -560,7 +560,7 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
                              PHASE_VOLUME_JAC_ELEM_OUTER_(i_elem) -
                          (rate_outer_prod / layer_thickness_inner) *
                              LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)) *
-                        state[AERO_SPEC_INNER_(i_adj_pairs)];
+                         state[AERO_SPEC_INNER_(i_adj_pairs)];
 
       jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem),
                          JACOBIAN_LOSS, d_loss);
