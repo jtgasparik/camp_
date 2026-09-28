@@ -330,16 +330,18 @@ contains
         true_conc(:,idx_H2O_l2) = conc_water
         true_conc(:,idx_H2O_l3) = conc_water
       else if (scenario.eq.2) then
-        true_conc(0,idx_solute_l0) = 1.0d-3
+        true_conc(0,idx_solute_l0) = 1.0d-2
         true_conc(0,idx_solute_l1) = 1.0d-2
         true_conc(:,idx_org_l0) = 2.0d-2
-        true_conc(:,idx_org_l1) = 2.0d-3
+        true_conc(:,idx_org_l1) = 2.0d-2
       end if
       if (scenario.eq.1) then
         number_conc = 1.3e6         ! particle number concentration (#/cc)
       else if (scenario.eq.2) then
-        ! fewer, larger particles give thicker layers, easing solver stiffness
-        number_conc = 1.3e3         ! particle number concentration (#/cc)
+        ! fewer, larger particles give thicker layers and a smaller
+        ! surface-area-to-volume ratio, which reduces the diffusion rate
+        ! constants that were making the ODE system stiff
+        number_conc = 1.3e6         ! particle number concentration (#/cc)
       end if
       true_conc(0,:) = true_conc(0,:) / (number_conc * 1000.0) ! convert to kg/m3 per particle
       model_conc(0,:) = true_conc(0,:)
