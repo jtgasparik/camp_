@@ -375,13 +375,14 @@ void rxn_condensed_phase_diffusion_calc_deriv_contrib(
 
     // Calculate the rate constant for diffusion limited mass transfer between
     // particle layers
-    double rate_inner = (double)(eff_sa / volume_phase_inner);
-    double rate_outer = (double)(eff_sa / volume_phase_outer);
+    double rate_inner = (double)(2.0 * eff_sa / volume_phase_inner);
+    double rate_outer = (double)(2.0 * eff_sa / volume_phase_outer);
+    double layer_thickness = layer_thickness_inner + layer_thickness_outer;
 
-    rate_inner *= ((DIFF_COEFF_INNER_(i_adj_pairs) / layer_thickness_inner) 
+    rate_inner *= ((DIFF_COEFF_INNER_(i_adj_pairs) / layer_thickness) 
                     * state[AERO_SPEC_INNER_(i_adj_pairs)]);
 
-    rate_outer *= ((DIFF_COEFF_OUTER_(i_adj_pairs) / layer_thickness_outer) 
+    rate_outer *= ((DIFF_COEFF_OUTER_(i_adj_pairs) / layer_thickness) 
                     * state[AERO_SPEC_OUTER_(i_adj_pairs)]);
     
     if (DERIV_ID_INNER_(i_adj_pairs) >= 0) {
@@ -474,12 +475,13 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
 
     // Calculate the rate constant for diffusion limited mass transfer between
     // particle layers
-    double rate_inner = (double)(eff_sa / volume_phase_inner);
-    double rate_outer = (double)(eff_sa / volume_phase_outer);
+    double rate_inner = (double)(2.0 * eff_sa / volume_phase_inner);
+    double rate_outer = (double)(2.0 * eff_sa / volume_phase_outer);
+    double layer_thickness = layer_thickness_inner + layer_thickness_outer;
 
-    rate_inner *= ((DIFF_COEFF_INNER_(i_adj_pairs) / layer_thickness_inner));
+    rate_inner *= ((DIFF_COEFF_INNER_(i_adj_pairs) / layer_thickness));
 
-    rate_outer *= ((DIFF_COEFF_OUTER_(i_adj_pairs) / layer_thickness_outer));
+    rate_outer *= ((DIFF_COEFF_OUTER_(i_adj_pairs) / layer_thickness));
 
     // Direct dependence on the reacting species themselves (dY/d[X] terms)
     if (JAC_ID_INNER_INNER_(i_adj_pairs) >= 0) {
@@ -507,8 +509,12 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
                              INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) +
                          (rate_inner / volume_phase_inner) *
                              PHASE_VOLUME_JAC_ELEM_INNER_(i_elem) +
-                         (rate_inner / layer_thickness_inner) *
-                             LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)) *
+                         (rate_inner / layer_thickness) *
+                             (LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)+LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem)) +
+                          (rate_inner / layer_thickness) *
+                             (LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)) + 
+                          (rate_inner / layer_thickness) *
+                             (LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem))) *
                          state[AERO_SPEC_INNER_(i_adj_pairs)];
 
       // beta (Y' gain process): registered to PRODUCTION directly
@@ -516,8 +522,12 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
                              INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) -
                          (rate_outer / volume_phase_outer) *
                              PHASE_VOLUME_JAC_ELEM_OUTER_(i_elem) -
-                         (rate_outer / layer_thickness_outer) *
-                             LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem)) *
+                         (rate_outer / layer_thickness) *
+                             (LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)+LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem)) -
+                         (rate_outer / layer_thickness) *
+                             (LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)) -
+                         (rate_outer / layer_thickness) *
+                             (LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem))) *
                          state[AERO_SPEC_OUTER_(i_adj_pairs)];
 
       jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_INNER_(i_adj_pairs, i_elem),
@@ -533,8 +543,12 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
                              INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) +
                          (rate_outer / volume_phase_outer) *
                              PHASE_VOLUME_JAC_ELEM_OUTER_(i_elem) +
-                         (rate_outer / layer_thickness_outer) *
-                             LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem)) *
+                         (rate_outer / layer_thickness) *
+                             (LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)+LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem)) +
+                         (rate_outer / layer_thickness) *
+                             (LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)) +
+                         (rate_outer / layer_thickness) *
+                             (LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem))) *
                          state[AERO_SPEC_OUTER_(i_adj_pairs)];
 
       // alpha (Y'' gain process): registered to PRODUCTION directly, alpha has no Delta'' dependence
@@ -542,8 +556,12 @@ void rxn_condensed_phase_diffusion_calc_jac_contrib(ModelData *model_data,
                              INTERFACE_SURFACE_AREA_JAC_ELEM_(i_elem) -
                          (rate_inner / volume_phase_inner) *
                              PHASE_VOLUME_JAC_ELEM_INNER_(i_elem) -
-                         (rate_inner / layer_thickness_inner) *
-                             LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)) *
+                         (rate_inner / layer_thickness) *
+                             (LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)+LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem)) - 
+                         (rate_inner / layer_thickness) *
+                             (LAYER_THICKNESS_JAC_ELEM_INNER_(i_elem)) - 
+                          (rate_inner / layer_thickness) *
+                             (LAYER_THICKNESS_JAC_ELEM_OUTER_(i_elem))) *
                          state[AERO_SPEC_INNER_(i_adj_pairs)];
 
       jacobian_add_value(jac, (unsigned int)PHASE_JAC_ID_OUTER_(i_adj_pairs, i_elem),
