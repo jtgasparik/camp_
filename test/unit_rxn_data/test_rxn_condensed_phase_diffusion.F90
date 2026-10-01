@@ -98,7 +98,17 @@ contains
             idx_solute_l3, idx_H2O_l0, idx_H2O_l1, idx_H2O_l2, idx_H2O_l3, &
             i_time, i_spec, i
     integer(kind=i_kind) :: idx_org_l0, idx_org_l1, idx_solute_l0_org, idx_solute_l1_org
+    integer(kind=i_kind) :: scenario2_state_ids(8,2), i_particle, i_pair
+    integer(kind=i_kind) :: inner_state_id, outer_state_id
     real(kind=dp) :: time_step, time, conc_water, MW_solute, D_solute
+    real(kind=dp) :: background_scale
+    real(kind=dp) :: scenario2_k_inner(2,2), scenario2_k_outer(2,2)
+    real(kind=dp) :: scenario2_initial_inner(2,2), scenario2_initial_outer(2,2)
+    real(kind=dp) :: scenario2_equil_inner(2,2), scenario2_equil_outer(2,2)
+    real(kind=dp) :: layer_volume_inner, layer_volume_outer
+    real(kind=dp) :: phase_volume_inner, phase_volume_outer
+    real(kind=dp) :: radius_inner, radius_outer, interface_area, total_layer_thickness
+    real(kind=dp) :: decay_rate, decay_factor, concentration_sum
 #ifdef CAMP_USE_MPI
     character, allocatable :: buffer(:), buffer_copy(:)
     integer(kind=i_kind) :: pack_size, pos, i_elem, results, rank_1_results
@@ -156,6 +166,13 @@ contains
 
     ! Set output time step (s)
     time_step = 1.0
+    background_scale = 1.0
+    if (scenario.eq.2) then
+      ! Large fixed backgrounds make the changing solute a small perturbation
+      ! to the geometry while keeping the frozen-geometry exchange measurable.
+      background_scale = 1.0d5
+      time_step = 1.0d4
+    end if
 
 #ifdef CAMP_USE_MPI
     ! Load the model data on root process and pass it to process 1 for solving
@@ -257,6 +274,30 @@ contains
         call assert(987654321, idx_H2O_l1.gt.0)
         call assert(192837465, idx_org_l1.gt.0)
         call assert(564738291, idx_solute_l1_org.gt.0)
+
+        scenario2_state_ids(:,1) = (/idx_solute_l0, idx_H2O_l0, idx_org_l0, &
+                                     idx_solute_l0_org, idx_solute_l1, &
+                                     idx_H2O_l1, idx_org_l1, idx_solute_l1_org/)
+
+        idx_prefix = "P2.inner layer."
+        key = idx_prefix//"aqueous aerosol.solute_aq"
+        scenario2_state_ids(1,2) = aero_rep_ptr%spec_state_id(key)
+        key = idx_prefix//"aqueous aerosol.H2O_aq"
+        scenario2_state_ids(2,2) = aero_rep_ptr%spec_state_id(key)
+        key = idx_prefix//"organic aerosol.organic_sp"
+        scenario2_state_ids(3,2) = aero_rep_ptr%spec_state_id(key)
+        key = idx_prefix//"organic aerosol.solute_aq"
+        scenario2_state_ids(4,2) = aero_rep_ptr%spec_state_id(key)
+
+        idx_prefix = "P2.outer layer."
+        key = idx_prefix//"aqueous aerosol.solute_aq"
+        scenario2_state_ids(5,2) = aero_rep_ptr%spec_state_id(key)
+        key = idx_prefix//"aqueous aerosol.H2O_aq"
+        scenario2_state_ids(6,2) = aero_rep_ptr%spec_state_id(key)
+        key = idx_prefix//"organic aerosol.organic_sp"
+        scenario2_state_ids(7,2) = aero_rep_ptr%spec_state_id(key)
+        key = idx_prefix//"organic aerosol.solute_aq"
+        scenario2_state_ids(8,2) = aero_rep_ptr%spec_state_id(key)
       end if
 
 #ifdef CAMP_USE_MPI
@@ -290,6 +331,11 @@ contains
       call camp_mpi_bcast_integer(idx_H2O_l1)
       call camp_mpi_bcast_integer(idx_org_l1)
       call camp_mpi_bcast_integer(idx_solute_l1_org)
+      do i_particle = 1, 2
+        do i = 1, 8
+          call camp_mpi_bcast_integer(scenario2_state_ids(i,i_particle))
+        end do
+      end do
     end if
 
     ! broadcast the buffer size
@@ -346,25 +392,77 @@ contains
         true_conc(:,idx_H2O_l2) = conc_water
         true_conc(:,idx_H2O_l3) = conc_water
       else if (scenario.eq.2) then
-        true_conc(0,idx_solute_l0) = 0.0
-        true_conc(0,idx_H2O_l0) = conc_water
-        true_conc(:,idx_org_l0) = 2.0d-2
-        true_conc(0,idx_solute_l0_org) = 0.0
-        true_conc(0,idx_solute_l1) = 1.0d-2
-        true_conc(0,idx_H2O_l1) = conc_water
-        true_conc(0,idx_org_l1) = 2.0d-2
-        true_conc(0,idx_solute_l1_org) = 1.0d-2
+        do i_particle = 1, 2
+          true_conc(0,scenario2_state_ids(1,i_particle)) = 0.0
+          true_conc(0,scenario2_state_ids(2,i_particle)) = conc_water * background_scale
+          true_conc(0,scenario2_state_ids(3,i_particle)) = 2.0d-2 * background_scale
+          true_conc(0,scenario2_state_ids(4,i_particle)) = 0.0
+          true_conc(0,scenario2_state_ids(5,i_particle)) = 1.0d-2
+          true_conc(0,scenario2_state_ids(6,i_particle)) = conc_water * background_scale
+          true_conc(0,scenario2_state_ids(7,i_particle)) = 2.0d-2 * background_scale
+          true_conc(0,scenario2_state_ids(8,i_particle)) = 1.0d-2
+        end do
       end if
       if (scenario.eq.1) then
         number_conc = 1.3e6         ! particle number concentration (#/cc)
       else if (scenario.eq.2) then
         ! fewer, larger particles give thicker layers and a smaller
-        ! surface-area-to-volume ratio, which reduces the diffusion rate
-        ! constants that were making the ODE system stiff
+        ! surface-area-to-volume ratio, which reduces diffusion rate constants
+        ! that were making the ODE system stiff
         number_conc = 1.3e6         ! particle number concentration (#/cc)
       end if
       true_conc(0,:) = true_conc(0,:) / (number_conc * 1000.0) ! convert to kg/m3 per particle
       model_conc(0,:) = true_conc(0,:)
+
+      if (scenario.eq.2) then
+        do i_particle = 1, 2
+          layer_volume_inner = sum(true_conc(0,scenario2_state_ids(1:4,i_particle)))
+          layer_volume_outer = sum(true_conc(0,scenario2_state_ids(5:8,i_particle)))
+          radius_inner = (layer_volume_inner * 3.0 / 4.0 / 3.14159265359)**(1.0/3.0)
+          radius_outer = ((layer_volume_inner + layer_volume_outer) * &
+                          3.0 / 4.0 / 3.14159265359)**(1.0/3.0)
+          total_layer_thickness = radius_outer
+
+          do i_pair = 1, 2
+            if (i_pair.eq.1) then
+              inner_state_id = scenario2_state_ids(1,i_particle)
+              outer_state_id = scenario2_state_ids(8,i_particle)
+              phase_volume_inner = sum(true_conc(0,scenario2_state_ids(1:2,i_particle)))
+              phase_volume_outer = sum(true_conc(0,scenario2_state_ids(7:8,i_particle)))
+              interface_area = (phase_volume_inner / layer_volume_inner) * &
+                               (phase_volume_outer / layer_volume_outer) * &
+                               4.0 * 3.14159265359 * radius_inner**2
+              scenario2_k_inner(i_pair,i_particle) = &
+                  2.0 * interface_area / phase_volume_inner * (1.5d-9 / total_layer_thickness)
+              scenario2_k_outer(i_pair,i_particle) = &
+                  2.0 * interface_area / phase_volume_outer * (1.5d-10 / total_layer_thickness)
+            else
+              inner_state_id = scenario2_state_ids(4,i_particle)
+              outer_state_id = scenario2_state_ids(5,i_particle)
+              phase_volume_inner = sum(true_conc(0,scenario2_state_ids(3:4,i_particle)))
+              phase_volume_outer = sum(true_conc(0,scenario2_state_ids(5:6,i_particle)))
+              interface_area = (phase_volume_inner / layer_volume_inner) * &
+                               (phase_volume_outer / layer_volume_outer) * &
+                               4.0 * 3.14159265359 * radius_inner**2
+              scenario2_k_inner(i_pair,i_particle) = &
+                  2.0 * interface_area / phase_volume_inner * (1.5d-10 / total_layer_thickness)
+              scenario2_k_outer(i_pair,i_particle) = &
+                  2.0 * interface_area / phase_volume_outer * (1.5d-9 / total_layer_thickness)
+            end if
+
+            scenario2_initial_inner(i_pair,i_particle) = true_conc(0,inner_state_id)
+            scenario2_initial_outer(i_pair,i_particle) = true_conc(0,outer_state_id)
+            concentration_sum = scenario2_initial_inner(i_pair,i_particle) + &
+                                scenario2_initial_outer(i_pair,i_particle)
+            decay_rate = scenario2_k_inner(i_pair,i_particle) + scenario2_k_outer(i_pair,i_particle)
+            scenario2_equil_inner(i_pair,i_particle) = &
+                concentration_sum * scenario2_k_outer(i_pair,i_particle) / decay_rate
+            scenario2_equil_outer(i_pair,i_particle) = &
+                concentration_sum * scenario2_k_inner(i_pair,i_particle) / decay_rate
+          end do
+        end do
+        test_tolerance = 1.0d-1
+      end if
 
       ! single particle aerosol mass concentrations are per particle
       ! radius (m) calculated based on particle mass
@@ -494,6 +592,51 @@ contains
                         " Jacobian evaluation failures at time step "// &
                         trim( to_string( i_time ) ) )
 #endif
+
+        if (scenario.eq.2) then
+          do i_particle = 1, 2
+            true_conc(i_time,scenario2_state_ids(2,i_particle)) = &
+                true_conc(0,scenario2_state_ids(2,i_particle))
+            true_conc(i_time,scenario2_state_ids(3,i_particle)) = &
+                true_conc(0,scenario2_state_ids(3,i_particle))
+            true_conc(i_time,scenario2_state_ids(6,i_particle)) = &
+                true_conc(0,scenario2_state_ids(6,i_particle))
+            true_conc(i_time,scenario2_state_ids(7,i_particle)) = &
+                true_conc(0,scenario2_state_ids(7,i_particle))
+            do i_pair = 1, 2
+              if (i_pair.eq.1) then
+                inner_state_id = scenario2_state_ids(1,i_particle)
+                outer_state_id = scenario2_state_ids(8,i_particle)
+              else
+                inner_state_id = scenario2_state_ids(4,i_particle)
+                outer_state_id = scenario2_state_ids(5,i_particle)
+              end if
+                  decay_rate = scenario2_k_inner(i_pair,i_particle) + &
+                      scenario2_k_outer(i_pair,i_particle)
+                  decay_factor = exp(-i_time * time_step * decay_rate)
+              true_conc(i_time,inner_state_id) = scenario2_equil_inner(i_pair,i_particle) + &
+                  (scenario2_initial_inner(i_pair,i_particle) - &
+                    scenario2_equil_inner(i_pair,i_particle)) * decay_factor
+              true_conc(i_time,outer_state_id) = scenario2_equil_outer(i_pair,i_particle) + &
+                  (scenario2_initial_outer(i_pair,i_particle) - &
+                    scenario2_equil_outer(i_pair,i_particle)) * decay_factor
+              call assert_msg(730184621, &
+                  almost_equal(model_conc(i_time,inner_state_id), &
+                               true_conc(i_time,inner_state_id), test_tolerance, 1.0d-24), &
+                  "Scenario 2 inner analytic mismatch at t="//trim(to_string(i_time*time_step))// &
+                    " particle "//trim(to_string(i_particle))//" pair "//trim(to_string(i_pair))// &
+                    ": model="//trim(to_string(model_conc(i_time,inner_state_id)))// &
+                    " analytic="//trim(to_string(true_conc(i_time,inner_state_id))))
+              call assert_msg(730184622, &
+                  almost_equal(model_conc(i_time,outer_state_id), &
+                               true_conc(i_time,outer_state_id), test_tolerance, 1.0d-24), &
+                  "Scenario 2 outer analytic mismatch at t="//trim(to_string(i_time*time_step))// &
+                    " particle "//trim(to_string(i_particle))//" pair "//trim(to_string(i_pair))// &
+                    ": model="//trim(to_string(model_conc(i_time,outer_state_id)))// &
+                    " analytic="//trim(to_string(true_conc(i_time,outer_state_id))))
+            end do
+          end do
+        end if
 
       end do
 
