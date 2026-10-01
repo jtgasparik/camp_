@@ -97,7 +97,7 @@ contains
     integer(kind=i_kind) :: idx_solute_l0, idx_solute_l1, idx_solute_l2, &
             idx_solute_l3, idx_H2O_l0, idx_H2O_l1, idx_H2O_l2, idx_H2O_l3, &
             i_time, i_spec, i
-    integer(kind=i_kind) :: idx_org_l0, idx_org_l1
+    integer(kind=i_kind) :: idx_org_l0, idx_org_l1, idx_solute_l0_org, idx_solute_l1_org
     real(kind=dp) :: time_step, time, conc_water, MW_solute, D_solute
 #ifdef CAMP_USE_MPI
     character, allocatable :: buffer(:), buffer_copy(:)
@@ -143,7 +143,7 @@ contains
     if (scenario.eq.1) then
       num_state_var = 52
     else if (scenario.eq.2) then
-      num_state_var = 8
+      num_state_var = 16
     end if
     allocate(model_conc(0:NUM_TIME_STEP, num_state_var))
     allocate(true_conc(0:NUM_TIME_STEP, num_state_var))
@@ -232,19 +232,31 @@ contains
         idx_prefix = "P1.inner layer."
         key = idx_prefix//"aqueous aerosol.solute_aq"
         idx_solute_l0 = aero_rep_ptr%spec_state_id(key)
+        key = idx_prefix//"aqueous aerosol.H2O_aq"
+        idx_H2O_l0 = aero_rep_ptr%spec_state_id(key)
         key = idx_prefix//"organic aerosol.organic_sp"
         idx_org_l0 = aero_rep_ptr%spec_state_id(key)
+        key = idx_prefix//"organic aerosol.solute_aq"
+        idx_solute_l0_org = aero_rep_ptr%spec_state_id(key)
 
         idx_prefix = "P1.outer layer."
         key = idx_prefix//"aqueous aerosol.solute_aq"
         idx_solute_l1 = aero_rep_ptr%spec_state_id(key)
+        key = idx_prefix//"aqueous aerosol.H2O_aq"
+        idx_H2O_l1 = aero_rep_ptr%spec_state_id(key)
         key = idx_prefix//"organic aerosol.organic_sp"
         idx_org_l1 = aero_rep_ptr%spec_state_id(key)
+        key = idx_prefix//"organic aerosol.solute_aq"
+        idx_solute_l1_org = aero_rep_ptr%spec_state_id(key)
 
         call assert(670125843, idx_solute_l0.gt.0)
-        call assert(188857221, idx_solute_l1.gt.0)
+        call assert(641723066, idx_H2O_l0.gt.0)
         call assert(102439885, idx_org_l0.gt.0)
-        call assert(309792114, idx_org_l1.gt.0)
+        call assert(309792114, idx_solute_l0_org.gt.0)
+        call assert(943449331, idx_solute_l1.gt.0)
+        call assert(987654321, idx_H2O_l1.gt.0)
+        call assert(192837465, idx_org_l1.gt.0)
+        call assert(564738291, idx_solute_l1_org.gt.0)
       end if
 
 #ifdef CAMP_USE_MPI
@@ -271,9 +283,13 @@ contains
       call camp_mpi_bcast_integer(idx_H2O_l3)
     else if (scenario.eq.2) then
       call camp_mpi_bcast_integer(idx_solute_l0)
-      call camp_mpi_bcast_integer(idx_solute_l1)
+      call camp_mpi_bcast_integer(idx_H2O_l0)
       call camp_mpi_bcast_integer(idx_org_l0)
+      call camp_mpi_bcast_integer(idx_solute_l0_org)
+      call camp_mpi_bcast_integer(idx_solute_l1)
+      call camp_mpi_bcast_integer(idx_H2O_l1)
       call camp_mpi_bcast_integer(idx_org_l1)
+      call camp_mpi_bcast_integer(idx_solute_l1_org)
     end if
 
     ! broadcast the buffer size
@@ -330,10 +346,14 @@ contains
         true_conc(:,idx_H2O_l2) = conc_water
         true_conc(:,idx_H2O_l3) = conc_water
       else if (scenario.eq.2) then
-        true_conc(0,idx_solute_l0) = 1.0d-2
-        true_conc(0,idx_solute_l1) = 1.0d-2
+        true_conc(0,idx_solute_l0) = 0.0
+        true_conc(0,idx_H2O_l0) = conc_water
         true_conc(:,idx_org_l0) = 2.0d-2
-        true_conc(:,idx_org_l1) = 2.0d-2
+        true_conc(0,idx_solute_l0_org) = 0.0
+        true_conc(0,idx_solute_l1) = 1.0d-2
+        true_conc(0,idx_H2O_l1) = conc_water
+        true_conc(0,idx_org_l1) = 2.0d-2
+        true_conc(0,idx_solute_l1_org) = 1.0d-2
       end if
       if (scenario.eq.1) then
         number_conc = 1.3e6         ! particle number concentration (#/cc)
@@ -415,20 +435,30 @@ contains
                      * 3.0 / 4.0 / 3.14159265359 )**(2.0/3.0)
       else if (scenario.eq.2) then
         radius = ( ( true_conc(0,idx_solute_l0) +  &
+                     true_conc(0,idx_H2O_l0) + &
+                     true_conc(0,idx_org_l0) + &
+                     true_conc(0,idx_solute_l0_org) + &
                      true_conc(0,idx_solute_l1) +  &
-                     true_conc(0,idx_org_l0) +  &
-                     true_conc(0,idx_org_l1) ) &
+                     true_conc(0,idx_H2O_l1) + &
+                     true_conc(0,idx_org_l1) + &
+                     true_conc(0,idx_solute_l1_org) ) &
                      * 3.0 / 4.0 / 3.14159265359 )**(1.0/3.0)
         layer_thickness_l1 = ( ( true_conc(0,idx_solute_l0) +  &
-                     true_conc(0,idx_solute_l1) +  &
+                     true_conc(0,idx_H2O_l0) + &
                      true_conc(0,idx_org_l0) +  &
-                     true_conc(0,idx_org_l1) ) &
+                     true_conc(0,idx_solute_l0_org) + &
+                     true_conc(0,idx_solute_l1) + &
+                     true_conc(0,idx_H2O_l1) + &
+                     true_conc(0,idx_org_l1) + &
+                     true_conc(0,idx_solute_l1_org) ) &
                      * 3.0 / 4.0 / 3.14159265359 )**(1.0/3.0) - &
                      ( ( true_conc(0,idx_solute_l0) +  &
                      true_conc(0,idx_org_l0) ) &
                      * 3.0 / 4.0 / 3.14159265359 )**(1.0/3.0)
         layer_thickness_l0 = ( ( true_conc(0,idx_solute_l0) +  &
-                     true_conc(0,idx_org_l0) ) &
+                     true_conc(0,idx_H2O_l0) + &
+                     true_conc(0,idx_org_l0) + &
+                     true_conc(0,idx_solute_l0_org) ) &
                      * 3.0 / 4.0 / 3.14159265359 )**(1.0/3.0)
       end if
 
@@ -489,9 +519,13 @@ contains
         else if (scenario.eq.2) then
           write(7,*) i_time*time_step, &
                ' ', model_conc(i_time, idx_solute_l0), &
-               ' ', model_conc(i_time, idx_solute_l1), &
+               ' ', model_conc(i_time, idx_H2O_l0), &
                ' ', model_conc(i_time, idx_org_l0), &
-               ' ', model_conc(i_time, idx_org_l1)
+               ' ', model_conc(i_time, idx_solute_l0_org), &
+               ' ', model_conc(i_time, idx_solute_l1), &
+               ' ', model_conc(i_time, idx_H2O_l1), &
+               ' ', model_conc(i_time, idx_org_l1), &
+               ' ', model_conc(i_time, idx_solute_l1_org)
         end if
       end do
       if (scenario.eq.1) then
@@ -580,12 +614,12 @@ contains
                                 "Unexpected adjacent phase pair count: "//trim(to_string(num_adjacent_pairs)))
                 allocate(diff_coeff_inner_expected(num_adjacent_pairs))
                 allocate(diff_coeff_outer_expected(num_adjacent_pairs))
-                diff_coeff_inner_expected = (/1.5d-10, 1.0d-10, 1.5d-10, 1.0d-10/)
-                diff_coeff_outer_expected = (/1.0d-10, 1.5d-10, 1.0d-10, 1.5d-10/)
+                diff_coeff_inner_expected = (/1.5d-9, 1.5d-10, 1.5d-9, 1.5d-10/)
+                diff_coeff_outer_expected = (/1.5d-10, 1.5d-9, 1.5d-10, 1.5d-9/)
                 phase_id_inner_expected = (/1,2,5,6/)
                 phase_id_outer_expected = (/4,3,8,7/)
-                aero_spec_inner_expected = (/1,2,5,6/)
-                aero_spec_outer_expected = (/4,3,8,7/)
+                aero_spec_inner_expected = (/1,4,9,12/)
+                aero_spec_outer_expected = (/8,5,16,13/)
                 do i = 1, num_adjacent_pairs
                   call assert_msg(198340125, almost_equal(diff_coeff_inner(i), diff_coeff_inner_expected(i), 1.0d-15), &
                                   "DIFF_COEFF_INNER_ for pair "//trim(to_string(i))//" is "// &
